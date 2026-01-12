@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Blueprint | GIIS Robotics Club</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,75 +19,119 @@
             font-family: mc7;
             src: url('mc7.woff2') format('woff2');
         }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
             font-family: mcten, monospace;
-            font-size: 22px;
+            font-size: clamp(16px, 2.5vw, 22px);
             cursor: url('crosshair-32.png') 16 16, crosshair;
-
+            line-height: 1.4;
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
         }
+        
+        .bg-video {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+            object-fit: cover;
+        }
+        
         .holder {
             position: relative;
-            height: 100%;
+            min-height: 100vh;
+            min-height: 100dvh;
             width: 100%;
             display: flex;
             flex-direction: row;
-            justify-content: space-between;
+            justify-content: flex-start;
         }
+        
         .container {
-            position: absolute;
-            height: 100%;
-            width: 40%;
-            background: linear-gradient(to right, #000000da, #06060604);
-            padding-block: 2rem;
+            position: relative;
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 45%;
+            max-width: 600px;
+            background: linear-gradient(to right, #000000e8, #060606cc, #06060604);
+            padding: 2rem 1.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-y: auto;
         }
-        .side-container{
-            position: absolute;
-            height: 100%;
-            width: 60%;
-            right: 0;
+        
+        .logo {
+            width: 85%;
+            max-width: 520px;
+            margin-bottom: 0.5rem;
+            height: auto;
         }
-        .bcn{
+        
+        .footer-note {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            font-size: 0.8rem;
+            color: #AAA;
+        }
+        
+        .side-container {
+            display: none;
+        }
+        
+        .bcn {
             background-image: url('OIP.webp');
             background-size: cover; 
             background-position: center;
             height: 2em;
             width: 20em;
-            border-radius: 5;
+            max-width: 100%;
+            border-radius: 5px;
         }
+        
         h1 {
             color: white;
             font-size: 2rem;
             margin-bottom: 2rem;
         }
-        a{
+        
+        a {
             text-decoration: none;
         }
+        
         .mc-button {
-            --btn-size: 34pt;
+            --btn-size: clamp(24pt, 4vw, 34pt);
             height: calc(var(--btn-size) * 1.1);
             width: calc(var(--btn-size) * 10);
-
+            max-width: 100%;
             padding: 0;
             border: 2px solid #000;
             background: #999 url('https://i.ibb.co/rb2TWXL/bgbtn.png') center / cover;
             image-rendering: pixelated;
-
             overflow: hidden;
             white-space: nowrap;
             -webkit-user-select: none;
             user-select: none;
-            margin: .2rem 0;
+            margin: 0.2rem 0;
             cursor: url('crosshair-32.png') 16 16, pointer;
             font-family: 'mc7', monospace;
-            font-size: 22px;
+            font-size: clamp(16px, 2.2vw, 22px);
             color: #DDD;
+            touch-action: manipulation;
         }
 
         .mc-button .title {
@@ -94,12 +141,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-
             text-shadow: 2px 2px #000A;
             box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
         }
 
-        .mc-button:hover .title {
+        .mc-button:hover .title,
+        .mc-button:focus .title {
             background-color: rgba(100, 100, 255, 0.45);
             text-shadow: 2px 2px #202013CC;
             color: #FFFFA0;
@@ -109,11 +156,13 @@
 
         .mc-button:active .title {
             box-shadow: inset -2px -4px #0004, inset 2px 2px #FFF5;
+            background-color: rgba(100, 100, 255, 0.6);
         }
 
         .bp-carousel {
-            --btn-size: 34pt;
+            --btn-size: clamp(24pt, 4vw, 34pt);
             width: min(100%, calc(var(--btn-size) * 10));
+            max-width: 100%;
             margin-top: 1rem;
             font-family: 'mc7', monospace;
             color: #DDD;
@@ -133,7 +182,7 @@
         }
 
         .bp-carousel__header-title {
-            font-size: 20px;
+            font-size: clamp(16px, 2vw, 20px);
         }
 
         .bp-carousel__frame {
@@ -141,7 +190,7 @@
             border: 2px solid #000;
             background: #999 url('https://i.ibb.co/rb2TWXL/bgbtn.png') center / cover;
             box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
-            padding: 8px;
+            padding: clamp(4px, 1vw, 8px);
         }
 
         .bp-carousel__container {
@@ -151,6 +200,8 @@
             background: rgba(0, 0, 0, 0.35);
             border: 2px solid rgba(0, 0, 0, 0.75);
             box-shadow: inset -2px -4px rgba(0, 0, 0, 0.35), inset 2px 2px rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            touch-action: pan-y pinch-zoom;
         }
 
         .bp-carousel__slide {
@@ -177,8 +228,8 @@
 
         .bp-carousel__caption {
             color: #f2f2f2;
-            font-size: 16px;
-            padding: 6px 10px;
+            font-size: clamp(12px, 1.5vw, 16px);
+            padding: clamp(4px, 1vw, 6px) clamp(6px, 1.5vw, 10px);
             position: absolute;
             left: 8px;
             right: 8px;
@@ -196,10 +247,12 @@
             top: 50%;
             transform: translateY(-50%);
             width: auto;
-            padding: 10px 12px;
+            min-width: 44px;
+            min-height: 44px;
+            padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
             color: #DDD;
             font-weight: normal;
-            font-size: 18px;
+            font-size: clamp(14px, 2vw, 18px);
             transition: 0.2s ease;
             -webkit-user-select: none;
             user-select: none;
@@ -207,17 +260,21 @@
             background: rgba(0, 0, 0, 0.35);
             box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
             font-family: 'mc7', monospace;
+            touch-action: manipulation;
         }
 
-        .bp-carousel__nav:hover {
+        .bp-carousel__nav:hover,
+        .bp-carousel__nav:focus {
             background: rgba(100, 100, 255, 0.35);
             color: #FFFFA0;
             border-color: #FFFFA0;
             text-shadow: 2px 2px #202013CC;
+            outline: none;
         }
 
         .bp-carousel__nav:active {
             box-shadow: inset -2px -4px #0004, inset 2px 2px #FFF5;
+            background: rgba(100, 100, 255, 0.5);
         }
 
         .bp-carousel__nav--prev {
@@ -235,19 +292,22 @@
 
         .bp-carousel__dot {
             cursor: url('crosshair-32.png') 16 16, pointer;
-            height: 12px;
-            width: 12px;
+            height: clamp(10px, 1.5vw, 12px);
+            width: clamp(10px, 1.5vw, 12px);
             margin: 0 3px;
             background-color: rgba(0, 0, 0, 0.35);
             display: inline-block;
             transition: background-color 0.2s ease;
             border: 2px solid #000;
             box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+            touch-action: manipulation;
         }
 
-        .bp-carousel__dot:hover {
+        .bp-carousel__dot:hover,
+        .bp-carousel__dot:focus {
             background-color: rgba(100, 100, 255, 0.35);
             border-color: #FFFFA0;
+            outline: none;
         }
 
         .bp-carousel__dot.is-active {
@@ -255,84 +315,201 @@
             border-color: #FFFFA0;
         }
 
-        @media only screen and (max-width: 420px) {
-            .bp-carousel__nav { font-size: 14px; padding: 10px; }
-            .bp-carousel__caption { font-size: 14px; }
-            .bp-carousel__header-title { font-size: 18px; }
-        }
-
-        /* Responsive layout */
-        @media (max-width: 900px) {
-            .container { width: 55%; }
-        }
-
-        @media (max-width: 700px) {
-            html, body {
-                height: auto;
-                min-height: 100%;
-                overflow-x: hidden;
-                overflow-y: auto;
-                font-size: 20px;
+        @media (min-width: 1200px) {
+            .container {
+                width: 40%;
             }
+        }
 
+        @media (max-width: 1024px) {
+            .container {
+                width: 50%;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                width: 60%;
+            }
+        }
+
+        @media (max-width: 768px) {
             .holder {
-                height: auto;
-                min-height: 100vh;
                 flex-direction: column;
+                justify-content: flex-start;
             }
 
             .container {
-                position: relative;
                 width: 100%;
-                height: auto;
-                min-height: 100vh;
-                padding: 1.25rem 1rem 2rem;
-                background: linear-gradient(to bottom, #000000da, #06060604);
-            }
-
-            .container > img {
-                width: min(420px, 92%) !important;
-                margin-bottom: 0.75rem !important;
-            }
-
-            .container > span {
-                position: static !important;
-                margin-top: 1rem;
-                padding-bottom: env(safe-area-inset-bottom);
+                max-width: none;
+                min-height: auto;
+                background: linear-gradient(to bottom, #000000e8 0%, #000000cc 50%, #06060680 100%);
+                padding: 1.5rem 1rem;
+                padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
             }
 
             .mc-button {
                 --btn-size: 28pt;
-                width: min(92vw, calc(var(--btn-size) * 10));
-                font-size: 20px;
+                width: min(90vw, 340px);
             }
 
             .bp-carousel {
                 --btn-size: 28pt;
-                width: min(92vw, calc(var(--btn-size) * 10));
+                width: min(90vw, 340px);
             }
         }
 
-        @media (hover: none) {
-            html, body { cursor: auto; }
+        @media (max-width: 480px) {
+            html, body {
+                font-size: 18px;
+            }
+
+            .holder {
+                min-height: 100vh;
+                min-height: 100dvh;
+            }
+
+            .container {
+                width: 100%;
+                padding: 1.25rem 0.75rem;
+                padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+            }
+
+            .logo {
+                width: min(280px, 85%);
+                margin-bottom: 0.5rem;
+            }
+
+            .mc-button {
+                --btn-size: 24pt;
+                width: min(95vw, 300px);
+                font-size: 18px;
+            }
+
+            .bp-carousel {
+                --btn-size: 24pt;
+                width: min(95vw, 300px);
+            }
+
+            .bp-carousel__caption {
+                font-size: 12px;
+                padding: 4px 6px;
+                left: 4px;
+                right: 4px;
+                bottom: 4px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .mc-button {
+                --btn-size: 22pt;
+                font-size: 16px;
+            }
+
+            .bp-carousel {
+                --btn-size: 22pt;
+            }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .holder {
+                min-height: auto;
+            }
+
+            .container {
+                min-height: auto;
+                padding: 1rem;
+            }
+
+            .logo {
+                width: min(200px, 50%);
+                margin-bottom: 0.5rem;
+            }
+
+            .mc-button {
+                --btn-size: 22pt;
+                margin: 0.15rem 0;
+            }
+
+            .bp-carousel {
+                --btn-size: 22pt;
+                margin-top: 0.5rem;
+            }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            html, body {
+                cursor: auto;
+            }
+
+            .mc-button,
+            .bp-carousel__nav,
+            .bp-carousel__dot {
+                cursor: auto;
+            }
+
+            .mc-button {
+                min-height: 44px;
+            }
+
+            .bp-carousel__nav {
+                min-width: 44px;
+                min-height: 44px;
+            }
+
+            .bp-carousel__dot {
+                min-width: 24px;
+                min-height: 24px;
+                margin: 0 4px;
+            }
+        }
+
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .mc-button,
+            .bp-carousel__frame,
+            .bp-carousel__container {
+                border-width: 1.5px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .bp-carousel__slide--fade {
+                animation: none;
+            }
+
+            .bp-carousel__nav,
+            .bp-carousel__dot {
+                transition: none;
+            }
+        }
+
+        @media print {
+            .bg-video {
+                display: none;
+            }
+
+            .container {
+                background: white;
+                color: black;
+            }
         }
     </style>
     <link rel="icon" type="image/png" href="logo.png">
 </head>
 <body>
-    <video autoplay loop muted playsinline style="position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -1;">
+    <video class="bg-video" autoplay loop muted playsinline>
         <source src="https://7oaoepmc5nhfkhkk.public.blob.vercel-storage.com/bcgk.mp4" type="video/mp4">
     </video>
     <div class="holder">
         <div class="container">
-            <img src="blueprint.png" alt="Blueprint Logo" style="width: 85%; margin-bottom: .5rem;">
+            <img class="logo" src="blueprint.png" alt="Blueprint Logo">
             <a class="mc-button" href=""><span class="title">Register</span></a>
             <a class="mc-button" href=""><span class="title">Sponsors</span></a>
             <a class="mc-button" href=""><span class="title">Atlas</span></a>
             <a class="mc-button" href=""><span class="title">Event Details</span></a>
             <a class="mc-button" href="https://giisrobotics.club"><span class="title">GIIS Robotics Club</span></a>
-            <span style="position: absolute; bottom: 1rem; font-size: 0.8rem; color: #AAA;">© GIIS Robotics Club 2024</span>
-            <div class="carouesel bp-carousel" id="bp-carousel" aria-label="Image carousel" tabindex="0">
+            
+            <div class="bp-carousel" id="bp-carousel" aria-label="Image carousel" tabindex="0">
                 <div class="bp-carousel__header">
                     <span class="bp-carousel__header-title">Highlights</span>
                 </div>
@@ -340,18 +517,8 @@
                 <div class="bp-carousel__frame">
                     <div class="bp-carousel__container">
                         <div class="bp-carousel__slide bp-carousel__slide--fade">
-                            <img class="bp-carousel__img" src="blueprint.png" alt="Blueprint" loading="lazy">
-                            <div class="bp-carousel__caption">Blueprint</div>
-                        </div>
-
-                        <div class="bp-carousel__slide bp-carousel__slide--fade">
                             <img class="bp-carousel__img" src="resources/test1.png" alt="Club" loading="lazy">
                             <div class="bp-carousel__caption">GIIS Robotics Club</div>
-                        </div>
-
-                        <div class="bp-carousel__slide bp-carousel__slide--fade">
-                            <img class="bp-carousel__img" src="resources/test1.png" alt="Blueprint" loading="lazy">
-                            <div class="bp-carousel__caption">More coming soon</div>
                         </div>
 
                         <button type="button" class="bp-carousel__nav bp-carousel__nav--prev" aria-label="Previous slide">❮</button>
@@ -360,16 +527,11 @@
 
                     <div class="bp-carousel__dots" aria-label="Slide navigation">
                         <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 1"></span>
-                        <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 2"></span>
-                        <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 3"></span>
+                       
                     </div>
                 </div>
             </div>
-            
         </div>
-    </div>
-    <div class="holder">
-weggewg
     </div>
 
     <script>
@@ -381,8 +543,11 @@ weggewg
             const dots = Array.from(root.querySelectorAll('.bp-carousel__dot'));
             const prevBtn = root.querySelector('.bp-carousel__nav--prev');
             const nextBtn = root.querySelector('.bp-carousel__nav--next');
+            const container = root.querySelector('.bp-carousel__container');
 
             let index = 0;
+            let touchStartX = 0;
+            let touchEndX = 0;
 
             const render = () => {
                 slides.forEach((slide, i) => {
@@ -423,6 +588,26 @@ weggewg
                     goTo(index + 1);
                 }
             });
+
+            if (container) {
+                container.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                }, { passive: true });
+
+                container.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    const diff = touchStartX - touchEndX;
+                    const threshold = 50;
+
+                    if (Math.abs(diff) > threshold) {
+                        if (diff > 0) {
+                            goTo(index + 1);
+                        } else {
+                            goTo(index - 1);
+                        }
+                    }
+                }, { passive: true });
+            }
 
             render();
         })();
