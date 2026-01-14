@@ -50,7 +50,15 @@
             z-index: -1;
             object-fit: cover;
         }
-        
+        a{
+            color: #66aaff;
+            text-decoration: underline;
+            cursor: url('crosshair-32.png') 16 16, crosshair;
+        }
+        a:hover{
+            color: #99ccff;
+
+        }
         .holder {
             position: relative;
             min-height: 100vh;
@@ -504,7 +512,7 @@
         <div class="container">
             <img class="logo" src="blueprint.png" alt="Blueprint Logo">
             <a class="mc-button" href="https://forms.fillout.com/t/9zX6iFMaU5us"><span class="title">Register</span></a>
-            <a class="mc-button" href=""><span class="title">Sponsors</span></a>
+            <a class="mc-button" href="sponsors.html"><span class="title">Sponsors</span></a>
             <a class="mc-button" href=""><span class="title">Atlas</span></a>
             <a class="mc-button" href=""><span class="title">Event Details</span></a>
             <a class="mc-button" href="https://giisrobotics.club"><span class="title">GIIS Robotics Club</span></a>
@@ -517,8 +525,12 @@
                 <div class="bp-carousel__frame">
                     <div class="bp-carousel__container">
                         <div class="bp-carousel__slide bp-carousel__slide--fade">
-                            <img class="bp-carousel__img" src="resources/test1.png" alt="Club" loading="lazy">
-                            <div class="bp-carousel__caption">GIIS Robotics Club</div>
+                            <img class="bp-carousel__img" src="resources/bueprint.png" alt="Club" loading="lazy">
+                            <div class="bp-carousel__caption">Blueprint by GIIS Robotics Club</div>
+                        </div>
+                        <div class="bp-carousel__slide bp-carousel__slide--fade">
+                            <img class="bp-carousel__img" src="resources/xyz.png" alt="Club" loading="lazy">
+                            <div class="bp-carousel__caption">Our Sponsor: <a href="https://gen.xyz">Gen.xyz</a></div>
                         </div>
 
                         <button type="button" class="bp-carousel__nav bp-carousel__nav--prev" aria-label="Previous slide">❮</button>
@@ -527,7 +539,7 @@
 
                     <div class="bp-carousel__dots" aria-label="Slide navigation">
                         <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 1"></span>
-                       
+                       <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 2"></span>
                     </div>
                 </div>
             </div>
