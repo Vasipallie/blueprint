@@ -9,15 +9,14 @@
     <title>Blueprint | GIIS Robotics Club</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         @font-face {
             font-family: mcten;
-            src: url('mc10.woff2') format('woff2');
+            src: url('resources/mc10.woff2') format('woff2');
         }
         @font-face {
             font-family: mc7;
-            src: url('mc7.woff2') format('woff2');
+            src: url('resources/mc7.woff2') format('woff2');
         }
         
         *, *::before, *::after {
@@ -32,7 +31,7 @@
             overflow-y: auto;
             font-family: mcten, monospace;
             font-size: clamp(16px, 2.5vw, 22px);
-            cursor: url('crosshair-32.png') 16 16, crosshair;
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
             line-height: 1.4;
             -webkit-text-size-adjust: 100%;
             -webkit-tap-highlight-color: transparent;
@@ -53,7 +52,7 @@
         a{
             color: #66aaff;
             text-decoration: underline;
-            cursor: url('crosshair-32.png') 16 16, crosshair;
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
         }
         a:hover{
             color: #99ccff;
@@ -102,7 +101,7 @@
         }
         
         .bcn {
-            background-image: url('OIP.webp');
+            background-image: url('resources/OIP.webp');
             background-size: cover; 
             background-position: center;
             height: 2em;
@@ -128,14 +127,14 @@
             max-width: 100%;
             padding: 0;
             border: 2px solid #000;
-            background: #999 url('https://i.ibb.co/rb2TWXL/bgbtn.png') center / cover;
+            background: #999 url('resources/bgbtn.png') center / cover;
             image-rendering: pixelated;
             overflow: hidden;
             white-space: nowrap;
             -webkit-user-select: none;
             user-select: none;
             margin: 0.2rem 0;
-            cursor: url('crosshair-32.png') 16 16, pointer;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
             font-family: 'mc7', monospace;
             font-size: clamp(16px, 2.2vw, 22px);
             color: #DDD;
@@ -196,7 +195,7 @@
         .bp-carousel__frame {
             width: 100%;
             border: 2px solid #000;
-            background: #999 url('https://i.ibb.co/rb2TWXL/bgbtn.png') center / cover;
+            background: #999 url('resources/bgbtn.png') center / cover;
             box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
             padding: clamp(4px, 1vw, 8px);
         }
@@ -250,7 +249,7 @@
         }
 
         .bp-carousel__nav {
-            cursor: url('crosshair-32.png') 16 16, pointer;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
@@ -299,7 +298,7 @@
         }
 
         .bp-carousel__dot {
-            cursor: url('crosshair-32.png') 16 16, pointer;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
             height: clamp(10px, 1.5vw, 12px);
             width: clamp(10px, 1.5vw, 12px);
             margin: 0 3px;
@@ -502,7 +501,7 @@
             }
         }
     </style>
-    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="icon" type="image/png" href="resources/logo.png">
 </head>
 <body>
     <video class="bg-video" autoplay loop muted playsinline>
@@ -510,11 +509,11 @@
     </video>
     <div class="holder">
         <div class="container">
-            <img class="logo" src="blueprint.png" alt="Blueprint Logo">
+            <img class="logo" src="resources/blueprint.png" alt="Blueprint Logo">
             <a class="mc-button" href="https://forms.fillout.com/t/9zX6iFMaU5us"><span class="title">Register</span></a>
             <a class="mc-button" href="sponsors.html"><span class="title">Sponsors</span></a>
-            <a class="mc-button" href=""><span class="title">Atlas</span></a>
-            <a class="mc-button" href=""><span class="title">Event Details</span></a>
+            <a class="mc-button" href="/atlas/index.html"><span class="title">Atlas</span></a>
+            <a class="mc-button" href="event.html"><span class="title">Event Details</span></a>
             <a class="mc-button" href="https://giisrobotics.club"><span class="title">GIIS Robotics Club</span></a>
             
             <div class="bp-carousel" id="bp-carousel" aria-label="Image carousel" tabindex="0">
@@ -532,6 +531,10 @@
                             <img class="bp-carousel__img" src="resources/xyz.png" alt="Club" loading="lazy">
                             <div class="bp-carousel__caption">Our Sponsor: <a href="https://gen.xyz">Gen.xyz</a></div>
                         </div>
+                        <div class="bp-carousel__slide bp-carousel__slide--fade">
+                            <img class="bp-carousel__img" src="resources/tca.png" alt="Club" loading="lazy">
+                            <div class="bp-carousel__caption">Our Sponsor: <a href="https://www.treasurecapitalasia.com">Treasure Capital Asia</a></div>
+                        </div>
 
                         <button type="button" class="bp-carousel__nav bp-carousel__nav--prev" aria-label="Previous slide">❮</button>
                         <button type="button" class="bp-carousel__nav bp-carousel__nav--next" aria-label="Next slide">❯</button>
@@ -540,6 +543,7 @@
                     <div class="bp-carousel__dots" aria-label="Slide navigation">
                         <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 1"></span>
                        <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 2"></span>
+                       <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 3"></span>
                     </div>
                 </div>
             </div>

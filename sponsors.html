@@ -9,15 +9,14 @@
     <title>Sponsors | Blueprint</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <style>
         @font-face {
             font-family: mcten;
-            src: url('mc10.woff2') format('woff2');
+            src: url('resources/mc10.woff2') format('woff2');
         }
         @font-face {
             font-family: mc7;
-            src: url('mc7.woff2') format('woff2');
+            src: url('resources/mc7.woff2') format('woff2');
         }
         
         *, *::before, *::after {
@@ -32,7 +31,7 @@
             overflow-y: auto;
             font-family: mcten, monospace;
             font-size: clamp(16px, 2.5vw, 22px);
-            cursor: url('crosshair-32.png') 16 16, crosshair;
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
             line-height: 1.4;
             -webkit-text-size-adjust: 100%;
             -webkit-tap-highlight-color: transparent;
@@ -57,7 +56,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(ellipse at center, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.85) 100%);
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.8) 100%);
             z-index: 0;
         }
         
@@ -69,42 +68,49 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2rem 1rem;
-            padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+            padding: 2.5rem 1.5rem;
+            padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
         }
 
         .header {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
         }
         
         .logo {
-            width: clamp(200px, 35vw, 400px);
+            width: clamp(220px, 38vw, 420px);
             height: auto;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.5));
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.03);
         }
 
         .page-title {
             color: #FFFFA0;
             font-family: 'mc7', monospace;
-            font-size: clamp(28px, 5vw, 48px);
-            text-shadow: 4px 4px #000A;
+            font-size: clamp(32px, 6vw, 56px);
+            text-shadow: 4px 4px #000A, 0 0 30px rgba(255, 255, 160, 0.3);
             margin: 0.5rem 0;
             text-align: center;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
         }
 
         .page-subtitle {
-            color: #DDD;
+            color: #CCC;
             font-family: 'mc7', monospace;
-            font-size: clamp(14px, 2vw, 18px);
+            font-size: clamp(13px, 1.8vw, 17px);
             text-shadow: 2px 2px #000A;
-            margin-bottom: 1rem;
+            margin: 1rem 0 1.5rem;
             text-align: center;
-            max-width: 600px;
-            line-height: 1.6;
+            max-width: 550px;
+            line-height: 1.7;
+            opacity: 0.9;
         }
         
         a {
@@ -119,18 +125,24 @@
             max-width: 100%;
             padding: 0;
             border: 2px solid #000;
-            background: #999 url('https://i.ibb.co/rb2TWXL/bgbtn.png') center / cover;
+            background: #999 url('resources/bgbtn.png') center / cover;
             image-rendering: pixelated;
             overflow: hidden;
             white-space: nowrap;
             -webkit-user-select: none;
             user-select: none;
             margin: 0.2rem 0;
-            cursor: url('crosshair-32.png') 16 16, pointer;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
             font-family: 'mc7', monospace;
             font-size: clamp(16px, 2.2vw, 22px);
             color: #DDD;
             touch-action: manipulation;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .mc-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
         }
 
         .mc-button .title {
@@ -142,6 +154,7 @@
             align-items: center;
             text-shadow: 2px 2px #000A;
             box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+            transition: all 0.2s ease;
         }
 
         .mc-button:hover .title,
@@ -160,10 +173,10 @@
 
         .sponsors-container {
             width: 100%;
-            max-width: 1200px;
+            max-width: 1100px;
             display: flex;
             flex-direction: column;
-            gap: 2.5rem;
+            gap: 3rem;
         }
 
         .tier {
@@ -174,43 +187,51 @@
 
         .tier-label {
             font-family: 'mc7', monospace;
-            font-size: clamp(20px, 3vw, 28px);
+            font-size: clamp(22px, 3.5vw, 32px);
             text-shadow: 3px 3px #000A;
-            margin-bottom: 1rem;
-            padding: 0.5rem 2rem;
+            margin-bottom: 1.25rem;
+            padding: 0.6rem 2.5rem;
             position: relative;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 1rem;
+            letter-spacing: 0.1em;
         }
 
         .tier-label::before,
         .tier-label::after {
             content: '';
-            width: clamp(30px, 8vw, 80px);
-            height: 2px;
-            background: currentColor;
-            opacity: 0.5;
+            width: clamp(40px, 10vw, 100px);
+            height: 3px;
+            background: linear-gradient(90deg, transparent, currentColor, transparent);
+            opacity: 0.6;
         }
 
         .tier--gold .tier-label {
             color: #FFD700;
+            text-shadow: 3px 3px #000A, 0 0 20px rgba(255, 215, 0, 0.4);
         }
 
         .tier--silver .tier-label {
-            color: #C0C0C0;
+            color: #E8E8E8;
+            text-shadow: 3px 3px #000A, 0 0 15px rgba(200, 200, 200, 0.3);
         }
 
         .tier--bronze .tier-label {
-            color: #CD7F32;
+            color: #E8A850;
+            text-shadow: 3px 3px #000A, 0 0 15px rgba(205, 127, 50, 0.3);
         }
 
         .tier-frame {
             width: 100%;
-            border: 3px solid #000;
-            background: #888 url('https://i.ibb.co/rb2TWXL/bgbtn.png') center / cover;
-            box-shadow: inset -3px -6px #0006, inset 3px 3px #FFF7, 0 8px 32px rgba(0,0,0,0.5);
-            padding: clamp(16px, 3vw, 32px);
+            border: 4px solid #000;
+            background: #888 url('resources/bgbtn.png') center / cover;
+            box-shadow: 
+                inset -4px -8px #0006, 
+                inset 4px 4px #FFF7, 
+                0 12px 40px rgba(0,0,0,0.6),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            padding: clamp(20px, 4vw, 40px);
             image-rendering: pixelated;
         }
 
@@ -218,39 +239,73 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: clamp(12px, 2vw, 24px);
+            gap: clamp(16px, 3vw, 32px);
+            position: relative;
+        }
+
+        a.sponsor-card {
+            text-decoration: none;
+            color: inherit;
         }
 
         .sponsor-card {
-            background: rgba(0, 0, 0, 0.45);
-            border: 2px solid rgba(0, 0, 0, 0.8);
-            box-shadow: inset -2px -4px rgba(0, 0, 0, 0.4), inset 2px 2px rgba(255, 255, 255, 0.1);
-            padding: clamp(16px, 2vw, 24px);
+            background: linear-gradient(145deg, rgba(20, 20, 30, 0.6), rgba(0, 0, 0, 0.5));
+            border: 3px solid rgba(0, 0, 0, 0.9);
+            box-shadow: 
+                inset -2px -4px rgba(0, 0, 0, 0.5), 
+                inset 2px 2px rgba(255, 255, 255, 0.08),
+                0 6px 20px rgba(0, 0, 0, 0.4);
+            padding: clamp(20px, 2.5vw, 30px);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: all 0.25s ease;
-            cursor: url('crosshair-32.png') 16 16, pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sponsor-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .tier--gold .sponsor-card {
-            width: clamp(180px, 25vw, 280px);
+            width: clamp(200px, 28vw, 300px);
         }
 
         .tier--silver .sponsor-card {
-            width: clamp(150px, 20vw, 220px);
+            width: clamp(160px, 22vw, 240px);
         }
 
         .tier--bronze .sponsor-card {
-            width: clamp(120px, 15vw, 180px);
+            width: clamp(130px, 18vw, 190px);
         }
 
-        .sponsor-card:hover {
-            background: rgba(100, 100, 255, 0.4);
+        .sponsor-card:hover,
+        .sponsor-card:focus {
+            background: linear-gradient(145deg, rgba(70, 70, 150, 0.5), rgba(50, 50, 120, 0.4));
             border-color: #FFFFA0;
-            box-shadow: inset -2px -4px rgba(0, 0, 0, 0.25), inset 2px 2px rgba(255, 255, 255, 0.2), 0 0 20px rgba(255, 255, 160, 0.3);
-            transform: translateY(-4px);
+            box-shadow: 
+                inset -2px -4px rgba(0, 0, 0, 0.3), 
+                inset 2px 2px rgba(255, 255, 255, 0.15),
+                0 0 30px rgba(255, 255, 160, 0.25),
+                0 10px 30px rgba(0, 0, 0, 0.5);
+            transform: translateY(-8px) scale(1.02);
+            outline: none;
+        }
+
+        .sponsor-card:hover::before,
+        .sponsor-card:focus::before {
+            opacity: 1;
         }
 
         .sponsor-card img {
@@ -259,48 +314,69 @@
             aspect-ratio: 1 / 1;
             object-fit: contain;
             image-rendering: auto;
-            filter: brightness(1) drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-            transition: all 0.25s ease;
+            filter: brightness(1) drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+            transition: all 0.3s ease;
+            border-radius: 4px;
         }
 
         .sponsor-card:hover img {
-            filter: brightness(1.15) drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+            filter: brightness(1.2) drop-shadow(0 6px 16px rgba(0,0,0,0.5));
+            transform: scale(1.05);
         }
 
         .sponsor-card__name {
             color: #DDD;
             font-family: 'mc7', monospace;
-            font-size: clamp(12px, 1.5vw, 16px);
+            font-size: clamp(13px, 1.6vw, 17px);
             text-shadow: 2px 2px #000A;
-            margin-top: 0.75rem;
+            margin-top: 1rem;
             text-align: center;
-            transition: color 0.25s ease;
+            transition: all 0.3s ease;
+            letter-spacing: 0.02em;
         }
 
         .sponsor-card:hover .sponsor-card__name {
             color: #FFFFA0;
+            text-shadow: 2px 2px #000A, 0 0 10px rgba(255, 255, 160, 0.4);
         }
 
         .cta-section {
-            margin-top: 3rem;
+            margin-top: 3.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1rem;
-            padding: 2rem;
-            border: 2px solid #000;
-            background: rgba(0, 0, 0, 0.5);
-            box-shadow: inset -2px -4px rgba(0, 0, 0, 0.3), inset 2px 2px rgba(255, 255, 255, 0.05);
-            max-width: 500px;
+            gap: 1.25rem;
+            padding: 2.5rem 3rem;
+            border: 4px solid #000;
+            background: linear-gradient(145deg, rgba(30, 30, 50, 0.8), rgba(0, 0, 0, 0.7));
+            box-shadow: 
+                inset -3px -6px rgba(0, 0, 0, 0.4), 
+                inset 3px 3px rgba(255, 255, 255, 0.05),
+                0 10px 40px rgba(0, 0, 0, 0.5);
+            max-width: 520px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #FFFFA0, transparent);
+            opacity: 0.5;
         }
 
         .cta-text {
             color: #FFFFA0;
             font-family: 'mc7', monospace;
-            font-size: clamp(16px, 2vw, 20px);
+            font-size: clamp(17px, 2.2vw, 22px);
             text-shadow: 2px 2px #000A;
             text-align: center;
             margin: 0;
+            letter-spacing: 0.03em;
         }
 
         .cta-email {
@@ -308,75 +384,87 @@
             font-family: 'mc7', monospace;
             font-size: clamp(14px, 1.8vw, 18px);
             text-shadow: 2px 2px #000A;
-            transition: color 0.2s ease;
+            transition: all 0.25s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
         }
 
         .cta-email:hover {
             color: #FFFFA0;
+            text-shadow: 2px 2px #000A, 0 0 15px rgba(255, 255, 160, 0.5);
+            background: rgba(255, 255, 160, 0.1);
         }
 
         .footer {
             margin-top: auto;
-            padding-top: 2rem;
+            padding-top: 3rem;
         }
 
         @media (max-width: 768px) {
             .page-wrapper {
-                padding: 1.5rem 0.75rem;
+                padding: 1.5rem 1rem;
             }
 
             .sponsors-container {
-                gap: 2rem;
+                gap: 2.5rem;
             }
 
             .tier-frame {
-                padding: clamp(12px, 3vw, 20px);
+                padding: clamp(16px, 4vw, 24px);
             }
 
             .tier--gold .sponsor-card,
             .tier--silver .sponsor-card,
             .tier--bronze .sponsor-card {
-                width: clamp(130px, 40vw, 180px);
+                width: clamp(140px, 42vw, 200px);
             }
 
             .mc-button {
                 --btn-size: 24pt;
-                width: min(70vw, 220px);
+                width: min(80vw, 260px);
             }
 
             .cta-section {
-                margin: 2rem 1rem 0;
-                padding: 1.5rem;
+                margin: 2.5rem 1rem 0;
+                padding: 2rem 1.5rem;
+            }
+
+            .page-title {
+                font-size: clamp(28px, 7vw, 40px);
             }
         }
 
         @media (max-width: 480px) {
             .page-wrapper {
-                padding: 1rem 0.5rem;
+                padding: 1rem 0.75rem;
             }
 
             .logo {
-                width: min(180px, 60vw);
+                width: min(200px, 65vw);
             }
 
             .tier-label::before,
             .tier-label::after {
-                width: 20px;
+                width: 25px;
             }
 
             .sponsors-row {
-                gap: 10px;
+                gap: 14px;
             }
 
             .tier--gold .sponsor-card,
             .tier--silver .sponsor-card,
             .tier--bronze .sponsor-card {
-                width: calc(50% - 8px);
-                max-width: 150px;
+                width: calc(50% - 10px);
+                max-width: 160px;
             }
 
             .sponsor-card {
-                padding: 12px;
+                padding: 14px;
+            }
+
+            .cta-section {
+                padding: 1.5rem 1rem;
             }
         }
 
@@ -387,23 +475,30 @@
 
             .mc-button,
             .sponsor-card,
-            .cta-email {
+            .cta-email,
+            .logo {
                 cursor: auto;
             }
 
             .mc-button {
-                min-height: 44px;
+                min-height: 48px;
             }
 
             .sponsor-card:hover {
-                transform: none;
+                transform: translateY(-4px);
+            }
+
+            .sponsor-card:active {
+                transform: scale(0.98);
             }
         }
 
         @media (prefers-reduced-motion: reduce) {
             .sponsor-card,
             .sponsor-card img,
-            .cta-email {
+            .cta-email,
+            .logo,
+            .mc-button {
                 transition: none;
             }
 
@@ -434,29 +529,34 @@
     <div class="page-wrapper">
         <header class="header">
             <a href="index.html">
-                <img class="logo" src="blueprint.png" alt="Blueprint Logo">
+                <img class="logo" src="resources/blueprint.png" alt="Blueprint Logo">
             </a>
             <h1 class="page-title">Our Sponsors</h1>
-     <!--        <p class="page-subtitle">We extend our gratitude to all our sponsors for their generous support. Thank you for making Blueprint possible.</p>
+            <p class="page-subtitle">We extend our heartfelt gratitude to all our sponsors for their generous support in making Blueprint possible.</p>
             <a class="mc-button" href="index.html"><span class="title">← Home</span></a>
         </header>
 
         <main class="sponsors-container">
 
             <section class="tier tier--gold">
-                <h2 class="tier-label">Gold Sponsors</h2>
+                <h2 class="tier-label">Sponsors</h2>
                 <div class="tier-frame">
                     <div class="sponsors-row">
-                        <div class="sponsor-card">
-                            <img src="resources/test1.png" alt="Gold Sponsor">
-                            <span class="sponsor-card__name">Sponsor 1</span>
-                        </div>
+                        <a href="#" class="sponsor-card" target="_blank" rel="noopener">
+                            <img src="resources/tca.png" alt="Treasure Capital Asia">
+                            <span class="sponsor-card__name">Treasure Capital Asia</span>
+                        </a>
+                        <a href="https://gen.xyz" class="sponsor-card" target="_blank" rel="noopener">
+                            <img src="resources/xyz.png" alt="Gen.xyz">
+                            <span class="sponsor-card__name">Gen.xyz</span>
+                        </a>
                     </div>
                 </div>
             </section>
+            
 
         </main>
- -->
+
         <div class="cta-section">
             <p class="cta-text">Interested in sponsoring Blueprint?</p>
             <a class="mc-button" href="prospectus.pdf" target="_blank"><span class="title">Sponsorship Prospectus</span></a>

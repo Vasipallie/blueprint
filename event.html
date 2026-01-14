@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Event Details | Blueprint</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+        @font-face {
+            font-family: mcten;
+            src: url('resources/mc10.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: mc7;
+            src: url('resources/mc7.woff2') format('woff2');
+        }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+            font-family: mcten, monospace;
+            font-size: clamp(16px, 2.5vw, 22px);
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
+            line-height: 1.4;
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .bg-video {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+            object-fit: cover;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.8) 100%);
+            z-index: 0;
+        }
+        
+        .page-wrapper {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2.5rem 1.5rem;
+            padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+        }
+
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .logo {
+            width: clamp(200px, 35vw, 380px);
+            height: auto;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.5));
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.03);
+        }
+
+        .page-title {
+            color: #FFFFA0;
+            font-family: 'mc7', monospace;
+            font-size: clamp(32px, 6vw, 56px);
+            text-shadow: 4px 4px #000A, 0 0 30px rgba(255, 255, 160, 0.3);
+            margin: 0.5rem 0;
+            text-align: center;
+            letter-spacing: 0.08em;
+        }
+
+        .page-subtitle {
+            color: #CCC;
+            font-family: 'mc7', monospace;
+            font-size: clamp(13px, 1.8vw, 17px);
+            text-shadow: 2px 2px #000A;
+            margin: 0.5rem 0 1.5rem;
+            text-align: center;
+            max-width: 550px;
+            line-height: 1.7;
+            opacity: 0.9;
+        }
+        
+        a {
+            text-decoration: none;
+        }
+        
+        .mc-button {
+            display: inline-block;
+            --btn-size: clamp(24pt, 4vw, 34pt);
+            height: calc(var(--btn-size) * 1.1);
+            width: calc(var(--btn-size) * 10);
+            max-width: 100%;
+            padding: 0;
+            border: 2px solid #000;
+            background: #999 url('resources/bgbtn.png') center / cover;
+            image-rendering: pixelated;
+            overflow: hidden;
+            white-space: nowrap;
+            -webkit-user-select: none;
+            user-select: none;
+            margin: 0.2rem 0;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            font-family: 'mc7', monospace;
+            font-size: clamp(16px, 2.2vw, 22px);
+            color: #DDD;
+            touch-action: manipulation;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .mc-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .mc-button .title {
+            width: 100%;
+            height: 100%;
+            padding-bottom: 0.3em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-shadow: 2px 2px #000A;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+            transition: all 0.2s ease;
+        }
+
+        .mc-button:hover .title,
+        .mc-button:focus .title {
+            background-color: rgba(100, 100, 255, 0.45);
+            text-shadow: 2px 2px #202013CC;
+            color: #FFFFA0;
+            border: 3px solid #FFFFA0;
+            box-sizing: border-box;
+        }
+
+        .mc-button:active .title {
+            box-shadow: inset -2px -4px #0004, inset 2px 2px #FFF5;
+            background-color: rgba(100, 100, 255, 0.6);
+        }
+
+        .mc-button--register {
+            --btn-size: clamp(28pt, 5vw, 40pt);
+            width: calc(var(--btn-size) * 8);
+        }
+
+        .mc-button--register .title {
+            background-color: rgba(50, 180, 50, 0.3);
+            color: #90EE90;
+        }
+
+        .mc-button--register:hover .title,
+        .mc-button--register:focus .title {
+            background-color: rgba(50, 200, 50, 0.5);
+            color: #FFFFA0;
+            border-color: #90EE90;
+        }
+
+        .countdown-section {
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .countdown-label {
+            color: #FFFFA0;
+            font-family: 'mc7', monospace;
+            font-size: clamp(16px, 2vw, 20px);
+            text-shadow: 2px 2px #000A;
+            margin-bottom: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .countdown-container {
+            display: flex;
+            justify-content: center;
+            gap: clamp(8px, 2vw, 20px);
+            flex-wrap: wrap;
+        }
+
+        .countdown-box {
+            background: linear-gradient(145deg, rgba(20, 20, 30, 0.7), rgba(0, 0, 0, 0.6));
+            border: 3px solid #000;
+            box-shadow: 
+                inset -3px -6px rgba(0, 0, 0, 0.5), 
+                inset 3px 3px rgba(255, 255, 255, 0.08),
+                0 6px 20px rgba(0, 0, 0, 0.4);
+            padding: clamp(12px, 2vw, 24px) clamp(16px, 3vw, 32px);
+            min-width: clamp(70px, 12vw, 100px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .countdown-value {
+            color: #FFFFA0;
+            font-family: 'mc7', monospace;
+            font-size: clamp(28px, 5vw, 48px);
+            text-shadow: 3px 3px #000A, 0 0 20px rgba(255, 255, 160, 0.3);
+            line-height: 1;
+        }
+
+        .countdown-unit {
+            color: #AAA;
+            font-family: 'mc7', monospace;
+            font-size: clamp(10px, 1.5vw, 14px);
+            text-shadow: 2px 2px #000A;
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .content-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .info-card {
+            background: linear-gradient(145deg, rgba(20, 20, 30, 0.7), rgba(0, 0, 0, 0.6));
+            border: 4px solid #000;
+            box-shadow: 
+                inset -4px -8px rgba(0, 0, 0, 0.5), 
+                inset 4px 4px rgba(255, 255, 255, 0.08),
+                0 8px 30px rgba(0, 0, 0, 0.5);
+            padding: clamp(20px, 3vw, 32px);
+        }
+
+        .info-card__icon {
+            font-size: clamp(28px, 4vw, 40px);
+            margin-bottom: 0.75rem;
+        }
+
+        .info-card__title {
+            color: #FFFFA0;
+            font-family: 'mc7', monospace;
+            font-size: clamp(18px, 2.5vw, 24px);
+            text-shadow: 2px 2px #000A;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.03em;
+        }
+
+        .info-card__content {
+            color: #DDD;
+            font-family: 'mc7', monospace;
+            font-size: clamp(14px, 1.8vw, 18px);
+            text-shadow: 2px 2px #000A;
+            line-height: 1.6;
+        }
+
+        .info-card__content a {
+            color: #8AF;
+            text-decoration: underline;
+            transition: color 0.2s ease;
+        }
+
+        .info-card__content a:hover {
+            color: #FFFFA0;
+        }
+
+        .event-flow-section {
+            background: linear-gradient(145deg, rgba(20, 20, 30, 0.7), rgba(0, 0, 0, 0.6));
+            border: 4px solid #000;
+            box-shadow: 
+                inset -4px -8px rgba(0, 0, 0, 0.5), 
+                inset 4px 4px rgba(255, 255, 255, 0.08),
+                0 8px 30px rgba(0, 0, 0, 0.5);
+            padding: clamp(24px, 4vw, 40px);
+        }
+
+        .section-title {
+            color: #FFFFA0;
+            font-family: 'mc7', monospace;
+            font-size: clamp(22px, 3vw, 30px);
+            text-shadow: 3px 3px #000A;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            letter-spacing: 0.05em;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: clamp(30px, 5vw, 50px);
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to bottom, #FFFFA0, #FFE066, #FFFFA0);
+            opacity: 0.6;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+
+        .timeline-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: calc(-1 * clamp(30px, 5vw, 50px) + 2px);
+            top: 6px;
+            width: 16px;
+            height: 16px;
+            background: #FFFFA0;
+            border: 3px solid #000;
+            box-shadow: 0 0 10px rgba(255, 255, 160, 0.5);
+        }
+
+        .timeline-time {
+            color: #FFFFA0;
+            font-family: 'mc7', monospace;
+            font-size: clamp(14px, 1.8vw, 18px);
+            text-shadow: 2px 2px #000A;
+        }
+
+        .day-header {
+            color: #90EE90;
+            font-family: 'mc7', monospace;
+            font-size: clamp(20px, 2.5vw, 26px);
+            text-shadow: 3px 3px #000A;
+            margin: 2rem 0 1.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(145deg, rgba(50, 100, 50, 0.4), rgba(20, 60, 20, 0.3));
+            border: 3px solid rgba(0, 0, 0, 0.6);
+            box-shadow: inset -2px -4px rgba(0, 0, 0, 0.3), inset 2px 2px rgba(255, 255, 255, 0.05);
+            text-align: center;
+            letter-spacing: 0.05em;
+        }
+
+        .day-header:first-child {
+            margin-top: 0;
+        }
+        .timeline-title {
+            color: #FFF;
+            font-family: 'mc7', monospace;
+            font-size: clamp(16px, 2vw, 20px);
+            text-shadow: 2px 2px #000A;
+            margin-bottom: 0.25rem;
+        }
+
+        .timeline-desc {
+            color: #AAA;
+            font-family: 'mc7', monospace;
+            font-size: clamp(12px, 1.5vw, 15px);
+            text-shadow: 1px 1px #000A;
+            line-height: 1.5;
+        }
+
+        .register-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            padding: 2rem;
+            background: linear-gradient(145deg, rgba(30, 50, 30, 0.6), rgba(0, 20, 0, 0.5));
+            border: 4px solid #000;
+            box-shadow: 
+                inset -3px -6px rgba(0, 0, 0, 0.4), 
+                inset 3px 3px rgba(100, 255, 100, 0.05),
+                0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .register-text {
+            color: #90EE90;
+            font-family: 'mc7', monospace;
+            font-size: clamp(16px, 2vw, 20px);
+            text-shadow: 2px 2px #000A;
+            text-align: center;
+        }
+
+        .footer {
+            margin-top: auto;
+            padding-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .page-wrapper {
+                padding: 1.5rem 1rem;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .countdown-container {
+                gap: 10px;
+            }
+
+            .countdown-box {
+                min-width: 65px;
+                padding: 10px 14px;
+            }
+
+            .mc-button {
+                --btn-size: 24pt;
+                width: min(80vw, 260px);
+            }
+
+            .mc-button--register {
+                --btn-size: 26pt;
+                width: min(85vw, 300px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .page-wrapper {
+                padding: 1rem 0.75rem;
+            }
+
+            .logo {
+                width: min(180px, 60vw);
+            }
+
+            .timeline {
+                padding-left: 30px;
+            }
+
+            .timeline-item::before {
+                left: -22px;
+                width: 12px;
+                height: 12px;
+            }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            html, body {
+                cursor: auto;
+            }
+
+            .mc-button,
+            .logo {
+                cursor: auto;
+            }
+
+            .mc-button {
+                min-height: 48px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .mc-button,
+            .logo {
+                transition: none;
+            }
+        }
+
+        @media print {
+            .bg-video,
+            .overlay {
+                display: none;
+            }
+
+            .page-wrapper {
+                background: white;
+            }
+        }
+    </style>
+    <link rel="icon" type="image/png" href="logo.png">
+</head>
+<body>
+    <video class="bg-video" autoplay loop muted playsinline>
+        <source src="https://7oaoepmc5nhfkhkk.public.blob.vercel-storage.com/bcgk.mp4" type="video/mp4">
+    </video>
+    <div class="overlay"></div>
+
+    <div class="page-wrapper">
+        <header class="header">
+            <a href="index.html">
+                <img class="logo" src="resources/blueprint.png" alt="Blueprint Logo">
+            </a>
+            <h1 class="page-title">Event Details</h1>
+            <p class="page-subtitle">Join us for an exciting robotics competition featuring teams from across multiple grades.</p>
+            <a class="mc-button" href="index.html"><span class="title">← Home</span></a>
+        </header>
+
+        <section class="countdown-section">
+            <p class="countdown-label">Event Starts In</p>
+            <div class="countdown-container">
+                <div class="countdown-box">
+                    <span class="countdown-value" id="days">00</span>
+                    <span class="countdown-unit">Days</span>
+                </div>
+                <div class="countdown-box">
+                    <span class="countdown-value" id="hours">00</span>
+                    <span class="countdown-unit">Hours</span>
+                </div>
+                <div class="countdown-box">
+                    <span class="countdown-value" id="minutes">00</span>
+                    <span class="countdown-unit">Minutes</span>
+                </div>
+                <div class="countdown-box">
+                    <span class="countdown-value" id="seconds">00</span>
+                    <span class="countdown-unit">Seconds</span>
+                </div>
+            </div>
+        </section>
+
+        <main class="content-container">
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-card__icon">📅</div>
+                    <h2 class="info-card__title">Date & Time</h2>
+                    <div class="info-card__content">
+                        <strong>Day 1: Monday, March 30, 2026</strong><br>
+                        8:30 AM - 7:30 PM<br><br>
+                        <strong>Day 2: Tuesday, March 31, 2026</strong><br>
+                        9:00 AM - 7:00 PM
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card__icon">📍</div>
+                    <h2 class="info-card__title">Location</h2>
+                    <div class="info-card__content">
+                        <strong>GIIS SMART Campus</strong><br>
+                        27 Punggol Field Walk<br>
+                        Singapore 828649<br>
+                        <a href="https://maps.app.goo.gl/iSAQ2pgctUpLsNja9" target="_blank">View on Google Maps →</a>
+                    </div>
+                </div>
+            </div>
+
+            <section class="event-flow-section">
+                <h2 class="section-title">📋 Event Schedule</h2>
+                
+                <h3 class="day-header">📅 Day 1 - March 30</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-time">8:30 AM - 9:00 AM</div>
+                        <div class="timeline-title">Registration</div>
+                        <div class="timeline-desc">Teams arrive and check in.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">9:00 AM - 9:40 AM</div>
+                        <div class="timeline-title">Opening Ceremony</div>
+                        <div class="timeline-desc">Introduction to theme, briefing on event flow.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">9:40 AM - 11:00 AM</div>
+                        <div class="timeline-title">Workshop Session 1</div>
+                        <div class="timeline-desc">First workshop covering core concepts.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">11:00 AM - 11:10 AM</div>
+                        <div class="timeline-title">Snack Break</div>
+                        <div class="timeline-desc">Quick refreshment break.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">11:15 AM - 1:00 PM</div>
+                        <div class="timeline-title">Workshop Session 2</div>
+                        <div class="timeline-desc">Participants move to different venues for specialized sessions.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">1:00 PM - 1:30 PM</div>
+                        <div class="timeline-title">Lunch</div>
+                        <div class="timeline-desc">Lunch break for all participants.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">1:30 PM - 2:40 PM</div>
+                        <div class="timeline-title">Workshop Session 3</div>
+                        <div class="timeline-desc">Final workshop session of the day.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">2:50 PM - 5:00 PM</div>
+                        <div class="timeline-title">Build Session 1</div>
+                        <div class="timeline-desc">Teams begin building their robots.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">5:00 PM - 5:15 PM</div>
+                        <div class="timeline-title">Snack Break</div>
+                        <div class="timeline-desc">Quick refreshment break.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">5:20 PM - 7:00 PM</div>
+                        <div class="timeline-title">Build Session 2</div>
+                        <div class="timeline-desc">Continue robot construction.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">7:00 PM - 7:30 PM</div>
+                        <div class="timeline-title">Dinner & Wrap Up</div>
+                        <div class="timeline-desc">Dinner and end of Day 1.</div>
+                    </div>
+                </div>
+
+                <h3 class="day-header">📅 Day 2 - March 31</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-time">9:00 AM - 11:00 AM</div>
+                        <div class="timeline-title">Build Session 1</div>
+                        <div class="timeline-desc">Continue building robots from Day 1.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">11:00 AM - 11:10 AM</div>
+                        <div class="timeline-title">Snack Break</div>
+                        <div class="timeline-desc">Quick refreshment break.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">11:10 AM - 1:00 PM</div>
+                        <div class="timeline-title">Build Session 2</div>
+                        <div class="timeline-desc">Continue robot construction.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">1:00 PM - 1:30 PM</div>
+                        <div class="timeline-title">Lunch</div>
+                        <div class="timeline-desc">Lunch break for all participants.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">1:30 PM - 4:00 PM</div>
+                        <div class="timeline-title">Build Session 3</div>
+                        <div class="timeline-desc">Final build session to complete robots.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">4:00 PM - 4:15 PM</div>
+                        <div class="timeline-title">Prep Time</div>
+                        <div class="timeline-desc">Teams prepare for their pitch presentations.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">4:20 PM - 6:00 PM</div>
+                        <div class="timeline-title">Judging Session</div>
+                        <div class="timeline-desc">Teams present to judges and tech team.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">6:00 PM - 6:10 PM</div>
+                        <div class="timeline-title">Snack Break</div>
+                        <div class="timeline-desc">Quick break before awards.</div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-time">6:15 PM - 7:00 PM</div>
+                        <div class="timeline-title">Awards Ceremony</div>
+                        <div class="timeline-desc">Presentation of awards, group photos, and celebration!</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Register CTA -->
+            <section class="register-section">
+                <p class="register-text">Ready to compete? Secure your team's spot now!</p>
+                <a class="mc-button mc-button--register" href="#" target="_blank">
+                    <span class="title">🎮 Register Now</span>
+                </a>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <a class="mc-button" href="index.html"><span class="title">← Back to Home</span></a>
+        </footer>
+    </div>
+
+    <script>
+        // Set your event date here using ISO format (YYYY-MM-DDTHH:MM:SS)
+        const eventDate = new Date('2026-03-30T09:00:00').getTime(); // March 30, 2026 at 9:00 AM
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const distance = eventDate - now;
+
+            if (distance < 0) {
+                document.getElementById('days').textContent = '00';
+                document.getElementById('hours').textContent = '00';
+                document.getElementById('minutes').textContent = '00';
+                document.getElementById('seconds').textContent = '00';
+                document.querySelector('.countdown-label').textContent = 'Event Has Started!';
+                return;
+            }
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById('days').textContent = String(days).padStart(2, '0');
+            document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+            document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
+</html>
