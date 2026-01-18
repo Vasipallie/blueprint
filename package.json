@@ -1,0 +1,26 @@
+{
+  "name": "blueprint",
+  "version": "1.0.0",
+  "description": "The website for blueprint 2026 on 30th and 31st march",
+  "homepage": "https://github.com/Vasipallie/blueprint#readme",
+  "bugs": {
+    "url": "https://github.com/Vasipallie/blueprint/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vasipallie/blueprint.git"
+  },
+  "license": "ISC",
+  "author": "Vasipalli Eshan Aditya",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "dot-env": "^0.0.1",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.11"
+  }
+}
