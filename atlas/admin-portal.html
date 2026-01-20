@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#1a0000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Admin Portal | Atlas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+        @font-face {
+            font-family: mcten;
+            src: url('../views/resources/mc10.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: mc7;
+            src: url('../views/resources/mc7.woff2') format('woff2');
+        }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow-x: hidden;
+            font-family: mcten, monospace;
+            font-size: 14px;
+            cursor: url('../views/resources/crosshair-32.png') 16 16, crosshair;
+            line-height: 1.4;
+            background: #0a0a0a;
+            color: #DDD;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+            border: 2px solid #000;
+            box-shadow: inset 2px 2px #0008;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #330000, #1a0000);
+            border: 2px solid #000;
+            box-shadow: inset -2px -2px #0006, inset 2px 2px #ff000033;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, #550000, #330000);
+        }
+
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #330000 #0a0a0a;
+        }
+
+        /* Admin Dark Red/Stone Theme */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(to bottom, #1a0000, #0d0000);
+            border-right: 4px solid #000;
+            box-shadow: inset -4px -4px #0006, inset 2px 2px #ff000033;
+            padding: 1rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 2px solid #330000;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-logo {
+            color: #ff4444;
+            font-family: 'mc7', monospace;
+            font-size: 1.5rem;
+            text-shadow: 3px 3px #000;
+            letter-spacing: 0.05em;
+            margin: 0;
+        }
+
+        .sidebar-subtitle {
+            color: #888;
+            font-family: 'mc7', monospace;
+            font-size: 0.75rem;
+            margin: 0.25rem 0 0 0;
+        }
+
+        .sidebar-nav {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .sidebar-nav-item {
+            margin: 0.25rem 0.75rem;
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: #CCC;
+            text-decoration: none;
+            font-family: 'mc7', monospace;
+            font-size: 0.95rem;
+            border: 2px solid #000;
+            background: #333 url('../views/resources/bgbtn.png') center / cover;
+            image-rendering: pixelated;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
+            cursor: url('../views/resources/crosshair-32.png') 16 16, pointer;
+            transition: all 0.2s;
+        }
+
+        .sidebar-nav-link:hover,
+        .sidebar-nav-link.active {
+            background-color: rgba(255, 68, 68, 0.3);
+            color: #ff4444;
+            border-color: #ff4444;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #ff444433;
+        }
+
+        .sidebar-nav-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 1.2rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            flex: 1;
+            padding: 2rem;
+            background: linear-gradient(to bottom, #111, #0a0a0a);
+        }
+
+        /* Header */
+        .content-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 3px solid #330000;
+        }
+
+        .page-title {
+            color: #ff4444;
+            font-family: 'mc7', monospace;
+            font-size: 2rem;
+            text-shadow: 3px 3px #000;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .page-subtitle {
+            color: #888;
+            font-family: 'mc7', monospace;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        /* Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(to bottom, #1a0000, #0d0000);
+            border: 3px solid #000;
+            box-shadow: inset -3px -5px #0006, inset 3px 3px #ff000033;
+            padding: 1.5rem;
+        }
+
+        .stat-label {
+            color: #888;
+            font-family: 'mc7', monospace;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            color: #ff4444;
+            font-family: 'mc7', monospace;
+            font-size: 2rem;
+            text-shadow: 2px 2px #000;
+        }
+
+        /* Sections */
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #330000;
+        }
+
+        .section-title {
+            color: #ff6666;
+            font-family: 'mc7', monospace;
+            font-size: 1.3rem;
+            text-shadow: 2px 2px #000;
+            margin: 0;
+        }
+
+        .section-icon {
+            font-size: 1.5rem;
+        }
+
+        /* Broadcast Center */
+        .broadcast-panel {
+            background: linear-gradient(to bottom, #1a0000, #0d0000);
+            border: 3px solid #000;
+            box-shadow: inset -3px -5px #0006, inset 3px 3px #ff000033;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .broadcast-form {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .broadcast-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 0.75rem 1rem;
+            background: #1a1a1a;
+            border: 3px solid #333;
+            color: #DDD;
+            font-family: mcten, monospace;
+            font-size: 1rem;
+            box-shadow: inset 2px 2px #0008;
+        }
+
+        .broadcast-input:focus {
+            outline: none;
+            border-color: #ff4444;
+            box-shadow: inset 2px 2px #0008, 0 0 5px #ff4444;
+        }
+
+        .mc-button {
+            padding: 1rem 2rem;
+            border: 4px solid #000;
+            background: #555 url('../views/resources/bgbtn.png') center / cover;
+            image-rendering: pixelated;
+            color: #DDD;
+            font-family: 'mc7', monospace;
+            font-size: 1.1rem;
+            cursor: url('../views/resources/crosshair-32.png') 16 16, pointer;
+            box-shadow: inset -4px -6px #0006, inset 3px 3px #FFF5;
+            white-space: nowrap;
+            min-height: 48px;
+        }
+
+        .mc-button:hover {
+            background-color: rgba(255, 68, 68, 0.4);
+            color: #ff4444;
+            border-color: #ff4444;
+        }
+
+        .mc-button:active {
+            box-shadow: inset 3px 5px #0006;
+        }
+
+        .mc-button.success {
+            background-color: rgba(68, 255, 68, 0.3);
+            border-color: #44ff44;
+            color: #44ff44;
+        }
+
+        /* Table */
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: linear-gradient(to bottom, #1a0000, #0d0000);
+            border: 3px solid #000;
+            box-shadow: inset -3px -5px #0006, inset 3px 3px #ff000033;
+        }
+
+        .data-table thead {
+            background: linear-gradient(to bottom, #330000, #1a0000);
+        }
+
+        .data-table th {
+            color: #ff6666;
+            font-family: 'mc7', monospace;
+            font-size: 0.9rem;
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 2px solid #000;
+            text-shadow: 2px 2px #000;
+        }
+
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #330000;
+            font-family: mcten, monospace;
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        /* Toggle Switch */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #333;
+            border: 2px solid #000;
+            cursor: pointer;
+            box-shadow: inset 2px 2px #0008;
+        }
+
+        .toggle-switch.active {
+            background: #44ff44;
+            box-shadow: inset 2px 2px #0008;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: #666;
+            border: 2px solid #000;
+            transition: transform 0.2s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(24px);
+            background: #fff;
+        }
+
+        .toggle-label {
+            font-family: 'mc7', monospace;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .toggle-switch.active + .toggle-label {
+            color: #44ff44;
+        }
+
+        /* Unlock Buttons */
+        .unlock-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .unlock-btn {
+            padding: 0.6rem 1.2rem;
+            border: 3px solid #000;
+            background: #444;
+            color: #AAA;
+            font-family: 'mc7', monospace;
+            font-size: 0.9rem;
+            cursor: url('../views/resources/crosshair-32.png') 16 16, pointer;
+            box-shadow: inset -3px -4px #0006, inset 2px 2px #FFF3;
+            min-height: 40px;
+        }
+
+        .unlock-btn:hover {
+            background-color: rgba(68, 68, 255, 0.4);
+            color: #6666ff;
+            border-color: #6666ff;
+        }
+
+        .unlock-btn.unlocked {
+            background-color: rgba(68, 255, 68, 0.3);
+            border-color: #44ff44;
+            color: #44ff44;
+        }
+
+        /* Project Grading */
+        .project-item {
+            background: linear-gradient(to bottom, #1a0000, #0d0000);
+            border: 3px solid #000;
+            box-shadow: inset -3px -5px #0006, inset 3px 3px #ff000033;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .project-title {
+            color: #ff6666;
+            font-family: 'mc7', monospace;
+            font-size: 1.1rem;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .project-student {
+            color: #888;
+            font-family: 'mc7', monospace;
+            font-size: 0.85rem;
+        }
+
+        .project-link {
+            color: #66aaff;
+            font-family: 'mc7', monospace;
+            font-size: 0.85rem;
+            text-decoration: underline;
+            cursor: url('../views/resources/crosshair-32.png') 16 16, pointer;
+        }
+
+        .project-link:hover {
+            color: #99ccff;
+        }
+
+        .score-input-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .score-input {
+            width: 100px;
+            padding: 0.5rem;
+            background: #1a1a1a;
+            border: 3px solid #333;
+            color: #DDD;
+            font-family: mcten, monospace;
+            font-size: 1rem;
+            text-align: center;
+            box-shadow: inset 2px 2px #0008;
+        }
+
+        .score-input:focus {
+            outline: none;
+            border-color: #ff4444;
+        }
+
+        /* Alert Message */
+        .alert {
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            border: 3px solid #000;
+            font-family: 'mc7', monospace;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        .alert.success {
+            background: rgba(68, 255, 68, 0.2);
+            border-color: #44ff44;
+            color: #44ff44;
+        }
+
+        .alert.error {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+
+            .main-content {
+                margin-left: 200px;
+                padding: 1rem;
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .broadcast-form {
+                flex-direction: column;
+            }
+
+            .data-table {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Hidden Views */
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-logo">ATLAS</h1>
+                <p class="sidebar-subtitle">Admin Portal</p>
+            </div>
+            <nav>
+                <ul class="sidebar-nav">
+                    <li class="sidebar-nav-item">
+                        <a href="#" class="sidebar-nav-link active" data-view="dashboard">
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="#" class="sidebar-nav-link" data-view="students">
+                            <span>Students</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="#" class="sidebar-nav-link" data-view="submissions">
+                            <span>Submissions</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="#" class="sidebar-nav-link" data-view="broadcast">
+                            <span>Broadcast</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Alert -->
+            <div id="alert" class="alert"></div>
+
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view-section active">
+                <div class="content-header">
+                    <h2 class="page-title">Admin Dashboard</h2>
+                    <p class="page-subtitle">Monitor and manage your hackathon</p>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Total Students</div>
+                        <div class="stat-value" id="total-students">5</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Projects Submitted</div>
+                        <div class="stat-value" id="total-projects">3</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Lunch Completed</div>
+                        <div class="stat-value" id="lunch-count">2</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Avg Score</div>
+                        <div class="stat-value" id="avg-score">--</div>
+                    </div>
+                </div>
+
+                <!-- Quick Broadcast -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3 class="section-title">Quick Broadcast</h3>
+                    </div>
+                    <div class="broadcast-panel">
+                        <form class="broadcast-form" id="quick-broadcast-form">
+                            <input type="text" class="broadcast-input" placeholder="Type your announcement..." id="quick-broadcast-input">
+                            <button type="submit" class="mc-button">Send Global Announcement</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3 class="section-title">Recent Activity</h3>
+                    </div>
+                    <div style="color: #888; font-family: 'mc7', monospace; padding: 1rem;">
+                        No recent activity...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Students View -->
+            <div id="students-view" class="view-section">
+                <div class="content-header">
+                    <h2 class="page-title">Student Management</h2>
+                    <p class="page-subtitle">Manage student lunch status and content access</p>
+                </div>
+
+                <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+                    <button class="mc-button" onclick="unlockAllCourses('beginner')">Unlock Beginner for All</button>
+                    <button class="mc-button" onclick="unlockAllCourses('advanced')">Unlock Advanced for All</button>
+                    <button class="mc-button" onclick="lockAllCourses()">Lock All Courses</button>
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Day 1 Meals</th>
+                            <th>Day 2 Meals</th>
+                            <th>Course Access</th>
+                        </tr>
+                    </thead>
+                    <tbody id="students-table-body">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Submissions View -->
+            <div id="submissions-view" class="view-section">
+                <div class="content-header">
+                    <h2 class="page-title">Project Submissions</h2>
+                    <p class="page-subtitle">Grade student projects and review submissions</p>
+                </div>
+
+                <div id="projects-container">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Broadcast View -->
+            <div id="broadcast-view" class="view-section">
+                <div class="content-header">
+                    <h2 class="page-title">Broadcast Center</h2>
+                    <p class="page-subtitle">Send announcements to all students</p>
+                </div>
+
+                <div class="broadcast-panel">
+                    <form class="broadcast-form" id="main-broadcast-form">
+                        <input type="text" class="broadcast-input" placeholder="Type your global announcement..." id="main-broadcast-input" style="min-width: 400px;">
+                        <button type="submit" class="mc-button">Send to All Students</button>
+                    </form>
+                </div>
+
+                <div class="section" style="margin-top: 2rem;">
+                    <div class="section-header">
+                        <h3 class="section-title">Broadcast History</h3>
+                    </div>
+                    <div id="broadcast-history" style="color: #888; font-family: 'mc7', monospace; padding: 1rem;">
+                        No broadcasts sent yet...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Mock Data
+        const mockStudents = [
+            { id: 1, name: "Steve Miner", email: "steve@giis.edu", 
+              day1: { snack1: true, lunch: true, snack2: false }, 
+              day2: { snack1: false, lunch: false, snack2: false },
+              beginnerUnlocked: true, advancedUnlocked: false },
+            { id: 2, name: "Alex Crafter", email: "alex@giis.edu", 
+              day1: { snack1: true, lunch: false, snack2: true }, 
+              day2: { snack1: true, lunch: true, snack2: false },
+              beginnerUnlocked: true, advancedUnlocked: true },
+            { id: 3, name: "Ender Dragon", email: "ender@giis.edu", 
+              day1: { snack1: false, lunch: true, snack2: true }, 
+              day2: { snack1: false, lunch: false, snack2: false },
+              beginnerUnlocked: false, advancedUnlocked: false },
+            { id: 4, name: "Creeper Bot", email: "creeper@giis.edu", 
+              day1: { snack1: false, lunch: false, snack2: false }, 
+              day2: { snack1: false, lunch: false, snack2: false },
+              beginnerUnlocked: true, advancedUnlocked: false },
+            { id: 5, name: "Diamond Seeker", email: "diamond@giis.edu", 
+              day1: { snack1: true, lunch: true, snack2: true }, 
+              day2: { snack1: true, lunch: false, snack2: false },
+              beginnerUnlocked: false, advancedUnlocked: false }
+        ];
+
+        const mockProjects = [
+            { id: 1, name: "AI Chatbot", student: "Steve Miner", pitchDeckUrl: "https://docs.google.com/presentation/d/example1", score: null },
+            { id: 2, name: "Weather Predictor", student: "Alex Crafter", pitchDeckUrl: "https://docs.google.com/presentation/d/example2", score: 85 },
+            { id: 3, name: "Task Manager App", student: "Ender Dragon", pitchDeckUrl: "https://docs.google.com/presentation/d/example3", score: null }
+        ];
+
+        let broadcastHistory = [];
+
+        // Navigation
+        document.querySelectorAll('.sidebar-nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const view = link.dataset.view;
+                
+                // Update active link
+                document.querySelectorAll('.sidebar-nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                // Show corresponding view
+                document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+                document.getElementById(`${view}-view`).classList.add('active');
+            });
+        });
+
+        // Render Students Table
+        function renderStudentsTable() {
+            const tbody = document.getElementById('students-table-body');
+            tbody.innerHTML = mockStudents.map(student => `
+                <tr>
+                    <td style="color: #ff6666;">${student.name}</td>
+                    <td style="color: #AAA;">${student.email}</td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="unlock-btn ${student.day1.snack1 ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day1', 'snack1')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Snack 1</button>
+                            <button class="unlock-btn ${student.day1.lunch ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day1', 'lunch')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Lunch</button>
+                            <button class="unlock-btn ${student.day1.snack2 ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day1', 'snack2')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Snack 2</button>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="unlock-btn ${student.day2.snack1 ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day2', 'snack1')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Snack 1</button>
+                            <button class="unlock-btn ${student.day2.lunch ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day2', 'lunch')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Lunch</button>
+                            <button class="unlock-btn ${student.day2.snack2 ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day2', 'snack2')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Snack 2</button>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="unlock-buttons">
+                            <button class="unlock-btn ${student.beginnerUnlocked ? 'unlocked' : ''}" onclick="toggleCourse(${student.id}, 'beginner')">
+                                Beginner
+                            </button>
+                            <button class="unlock-btn ${student.advancedUnlocked ? 'unlocked' : ''}" onclick="toggleCourse(${student.id}, 'advanced')">
+                                Advanced
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Toggle Meal Status
+        function toggleMeal(studentId, day, meal) {
+            const student = mockStudents.find(s => s.id === studentId);
+            student[day][meal] = !student[day][meal];
+            renderStudentsTable();
+            updateStats();
+            const mealName = meal === 'snack1' ? 'Snack 1' : meal === 'snack2' ? 'Snack 2' : 'Lunch';
+            const dayName = day === 'day1' ? 'Day 1' : 'Day 2';
+            showAlert(`${student.name}'s ${dayName} ${mealName} status updated!`, 'success');
+        }
+
+        // Toggle Course Unlock
+        function toggleCourse(studentId, course) {
+            const student = mockStudents.find(s => s.id === studentId);
+            if (course === 'beginner') {
+                student.beginnerUnlocked = !student.beginnerUnlocked;
+            } else {
+                student.advancedUnlocked = !student.advancedUnlocked;
+            }
+            renderStudentsTable();
+            const status = student[course + 'Unlocked'] ? 'unlocked' : 'locked';
+            showAlert(`${course.charAt(0).toUpperCase() + course.slice(1)} course ${status} for ${student.name}!`, 'success');
+        }
+
+        // Unlock All Courses
+        function unlockAllCourses(course) {
+            mockStudents.forEach(student => {
+                if (course === 'beginner') {
+                    student.beginnerUnlocked = true;
+                } else {
+                    student.advancedUnlocked = true;
+                }
+            });
+            renderStudentsTable();
+            showAlert(`${course.charAt(0).toUpperCase() + course.slice(1)} course unlocked for all students!`, 'success');
+        }
+
+        // Lock All Courses
+        function lockAllCourses() {
+            mockStudents.forEach(student => {
+                student.beginnerUnlocked = false;
+                student.advancedUnlocked = false;
+            });
+            renderStudentsTable();
+            showAlert('All courses locked for all students!', 'success');
+        }
+
+        // Render Projects
+        function renderProjects() {
+            const container = document.getElementById('projects-container');
+            container.innerHTML = mockProjects.map(project => `
+                <div class="project-item">
+                    <div class="project-header">
+                        <div>
+                            <h4 class="project-title">${project.name}</h4>
+                            <p class="project-student">by ${project.student}</p>
+                        </div>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <a href="${project.pitchDeckUrl}" target="_blank" class="project-link">View Pitch Deck</a>
+                            <button class="mc-button" onclick="window.open('https://github.com/example/repo', '_blank')" style="padding: 0.5rem 1rem; font-size: 0.9rem;">View Repo</button>
+                        </div>
+                    </div>
+                    <div class="score-input-group">
+                        <label style="color: #888; font-family: 'mc7', monospace; font-size: 0.9rem;">Score (0-100):</label>
+                        <input type="number" class="score-input" min="0" max="100" value="${project.score || ''}" 
+                               placeholder="--" onchange="updateScore(${project.id}, this.value)">
+                        <button class="mc-button" onclick="saveScore(${project.id})">Save Score</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update Score
+        function updateScore(projectId, score) {
+            const project = mockProjects.find(p => p.id === projectId);
+            project.score = score ? parseInt(score) : null;
+            updateStats();
+        }
+
+        // Save Score
+        function saveScore(projectId) {
+            const project = mockProjects.find(p => p.id === projectId);
+            if (project.score !== null) {
+                showAlert(`Score saved for ${project.name}!`, 'success');
+            } else {
+                showAlert('Please enter a score first!', 'error');
+            }
+        }
+
+        // Broadcast
+        document.getElementById('quick-broadcast-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('quick-broadcast-input');
+            if (input.value.trim()) {
+                sendBroadcast(input.value.trim());
+                input.value = '';
+            }
+        });
+
+        document.getElementById('main-broadcast-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('main-broadcast-input');
+            if (input.value.trim()) {
+                sendBroadcast(input.value.trim());
+                input.value = '';
+            }
+        });
+
+        function sendBroadcast(message) {
+            broadcastHistory.unshift({
+                message,
+                timestamp: new Date().toLocaleString()
+            });
+            renderBroadcastHistory();
+            showAlert('Broadcast sent to all students!', 'success');
+        }
+
+        function renderBroadcastHistory() {
+            const container = document.getElementById('broadcast-history');
+            if (broadcastHistory.length === 0) {
+                container.innerHTML = '<div style="color: #888; font-family: \'mc7\', monospace; padding: 1rem;">No broadcasts sent yet...</div>';
+            } else {
+                container.innerHTML = broadcastHistory.map(broadcast => `
+                    <div style="background: linear-gradient(to bottom, #1a0000, #0d0000); border: 2px solid #330000; padding: 1rem; margin-bottom: 0.5rem;">
+                        <div style="color: #ff6666; font-family: 'mc7', monospace; margin-bottom: 0.5rem;">${broadcast.message}</div>
+                        <div style="color: #666; font-family: 'mc7', monospace; font-size: 0.75rem;">${broadcast.timestamp}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Show Alert
+        function showAlert(message, type = 'success') {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert ${type} show`;
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 3000);
+        }
+
+        // Update Stats
+        function updateStats() {
+            document.getElementById('total-students').textContent = mockStudents.length;
+            document.getElementById('total-projects').textContent = mockProjects.length;
+            const lunchCount = mockStudents.filter(s => s.day1.lunch || s.day2.lunch).length;
+            document.getElementById('lunch-count').textContent = lunchCount;
+            
+            const scores = mockProjects.filter(p => p.score !== null).map(p => p.score);
+            if (scores.length > 0) {
+                const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+                document.getElementById('avg-score').textContent = avg.toFixed(1);
+            } else {
+                document.getElementById('avg-score').textContent = '--';
+            }
+        }
+
+        // Initialize
+        renderStudentsTable();
+        renderProjects();
+        renderBroadcastHistory();
+        updateStats();
+    </script>
+</body>
+</html>

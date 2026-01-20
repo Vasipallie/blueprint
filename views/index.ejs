@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Blueprint | GIIS Robotics Club</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+        @font-face {
+            font-family: mcten;
+            src: url('resources/mc10.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: mc7;
+            src: url('resources/mc7.woff2') format('woff2');
+        }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+            font-family: mcten, monospace;
+            font-size: clamp(16px, 2.5vw, 22px);
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
+            line-height: 1.4;
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .bg-video {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+            object-fit: cover;
+        }
+        a{
+            color: #66aaff;
+            text-decoration: underline;
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
+        }
+        a:hover{
+            color: #99ccff;
+
+        }
+        .holder {
+            position: relative;
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+        }
+        
+        .container {
+            position: relative;
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 45%;
+            max-width: 600px;
+            background: linear-gradient(to right, #000000e8, #060606cc, #06060604);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto;
+        }
+        
+        .logo {
+            width: 85%;
+            max-width: 520px;
+            margin-bottom: 0.5rem;
+            height: auto;
+        }
+        
+        .footer-note {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            font-size: 0.8rem;
+            color: #AAA;
+        }
+        
+        .side-container {
+            display: none;
+        }
+        
+        .bcn {
+            background-image: url('resources/OIP.webp');
+            background-size: cover; 
+            background-position: center;
+            height: 2em;
+            width: 20em;
+            max-width: 100%;
+            border-radius: 5px;
+        }
+        
+        h1 {
+            color: white;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        a {
+            text-decoration: none;
+        }
+        
+        .mc-button {
+            --btn-size: clamp(24pt, 4vw, 34pt);
+            height: calc(var(--btn-size) * 1.1);
+            width: calc(var(--btn-size) * 10);
+            max-width: 100%;
+            padding: 0;
+            border: 2px solid #000;
+            background: #999 url('resources/bgbtn.png') center / cover;
+            image-rendering: pixelated;
+            overflow: hidden;
+            white-space: nowrap;
+            -webkit-user-select: none;
+            user-select: none;
+            margin: 0.2rem 0;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            font-family: 'mc7', monospace;
+            font-size: clamp(16px, 2.2vw, 22px);
+            color: #DDD;
+            touch-action: manipulation;
+        }
+
+        .mc-button .title {
+            width: 100%;
+            height: 100%;
+            padding-bottom: 0.3em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-shadow: 2px 2px #000A;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+        }
+
+        .mc-button:hover .title,
+        .mc-button:focus .title {
+            background-color: rgba(100, 100, 255, 0.45);
+            text-shadow: 2px 2px #202013CC;
+            color: #FFFFA0;
+            border: 3px solid #FFFFA0;
+            box-sizing: border-box;
+        }
+
+        .mc-button:active .title {
+            box-shadow: inset -2px -4px #0004, inset 2px 2px #FFF5;
+            background-color: rgba(100, 100, 255, 0.6);
+        }
+
+        .bp-carousel {
+            --btn-size: clamp(24pt, 4vw, 34pt);
+            width: min(100%, calc(var(--btn-size) * 10));
+            max-width: 100%;
+            margin-top: 1rem;
+            font-family: 'mc7', monospace;
+            color: #DDD;
+            image-rendering: pixelated;
+        }
+
+        .bp-carousel__header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.35rem;
+            padding: 0 0.15rem;
+            color: #FFFFA0;
+            text-shadow: 2px 2px #000A;
+            letter-spacing: 0.02em;
+        }
+
+        .bp-carousel__header-title {
+            font-size: clamp(16px, 2vw, 20px);
+        }
+
+        .bp-carousel__frame {
+            width: 100%;
+            border: 2px solid #000;
+            background: #999 url('resources/bgbtn.png') center / cover;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+            padding: clamp(4px, 1vw, 8px);
+        }
+
+        .bp-carousel__container {
+            position: relative;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.35);
+            border: 2px solid rgba(0, 0, 0, 0.75);
+            box-shadow: inset -2px -4px rgba(0, 0, 0, 0.35), inset 2px 2px rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            touch-action: pan-y pinch-zoom;
+        }
+
+        .bp-carousel__slide {
+            display: none;
+            position: relative;
+        }
+
+        .bp-carousel__slide--fade {
+            animation: bpCarouselFade 0.4s ease;
+        }
+
+        @keyframes bpCarouselFade {
+            from { opacity: 0.6; }
+            to { opacity: 1; }
+        }
+
+        .bp-carousel__img {
+            width: 100%;
+            display: block;
+            aspect-ratio: 2 / 1;
+            object-fit: cover;
+            image-rendering: auto;
+        }
+
+        .bp-carousel__caption {
+            color: #f2f2f2;
+            font-size: clamp(12px, 1.5vw, 16px);
+            padding: clamp(4px, 1vw, 6px) clamp(6px, 1.5vw, 10px);
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            text-align: center;
+            text-shadow: 2px 2px #000A;
+            background: rgba(0, 0, 0, 0.55);
+            border: 2px solid rgba(0, 0, 0, 0.85);
+            box-shadow: inset -2px -4px rgba(0, 0, 0, 0.35), inset 2px 2px rgba(255, 255, 255, 0.06);
+        }
+
+        .bp-carousel__nav {
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: auto;
+            min-width: 44px;
+            min-height: 44px;
+            padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
+            color: #DDD;
+            font-weight: normal;
+            font-size: clamp(14px, 2vw, 18px);
+            transition: 0.2s ease;
+            -webkit-user-select: none;
+            user-select: none;
+            border: 2px solid #000;
+            background: rgba(0, 0, 0, 0.35);
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+            font-family: 'mc7', monospace;
+            touch-action: manipulation;
+        }
+
+        .bp-carousel__nav:hover,
+        .bp-carousel__nav:focus {
+            background: rgba(100, 100, 255, 0.35);
+            color: #FFFFA0;
+            border-color: #FFFFA0;
+            text-shadow: 2px 2px #202013CC;
+            outline: none;
+        }
+
+        .bp-carousel__nav:active {
+            box-shadow: inset -2px -4px #0004, inset 2px 2px #FFF5;
+            background: rgba(100, 100, 255, 0.5);
+        }
+
+        .bp-carousel__nav--prev {
+            left: 0;
+        }
+
+        .bp-carousel__nav--next {
+            right: 0;
+        }
+
+        .bp-carousel__dots {
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .bp-carousel__dot {
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            height: clamp(10px, 1.5vw, 12px);
+            width: clamp(10px, 1.5vw, 12px);
+            margin: 0 3px;
+            background-color: rgba(0, 0, 0, 0.35);
+            display: inline-block;
+            transition: background-color 0.2s ease;
+            border: 2px solid #000;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+            touch-action: manipulation;
+        }
+
+        .bp-carousel__dot:hover,
+        .bp-carousel__dot:focus {
+            background-color: rgba(100, 100, 255, 0.35);
+            border-color: #FFFFA0;
+            outline: none;
+        }
+
+        .bp-carousel__dot.is-active {
+            background-color: rgba(255, 255, 160, 0.75);
+            border-color: #FFFFA0;
+        }
+
+        @media (min-width: 1200px) {
+            .container {
+                width: 40%;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                width: 50%;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                width: 60%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .holder {
+                flex-direction: column;
+                justify-content: flex-start;
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                min-height: auto;
+                background: linear-gradient(to bottom, #000000e8 0%, #000000cc 50%, #06060680 100%);
+                padding: 1.5rem 1rem;
+                padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+            }
+
+            .mc-button {
+                --btn-size: 28pt;
+                width: min(90vw, 340px);
+            }
+
+            .bp-carousel {
+                --btn-size: 28pt;
+                width: min(90vw, 340px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            html, body {
+                font-size: 18px;
+            }
+
+            .holder {
+                min-height: 100vh;
+                min-height: 100dvh;
+            }
+
+            .container {
+                width: 100%;
+                padding: 1.25rem 0.75rem;
+                padding-top: calc(1.25rem + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+                padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
+                padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
+            }
+
+            .logo {
+                width: min(280px, 85%);
+                margin-bottom: 0.5rem;
+            }
+
+            .mc-button {
+                --btn-size: 24pt;
+                width: min(95vw, 300px);
+                font-size: 18px;
+                min-height: 48px;
+            }
+
+            .bp-carousel {
+                --btn-size: 24pt;
+                width: min(95vw, 300px);
+            }
+
+            .bp-carousel__caption {
+                font-size: 12px;
+                padding: 4px 6px;
+                left: 4px;
+                right: 4px;
+                bottom: 4px;
+            }
+
+            .bp-carousel__nav {
+                min-width: 48px;
+                min-height: 48px;
+                padding: 12px 14px;
+            }
+
+            .bp-carousel__dot {
+                min-width: 28px;
+                min-height: 28px;
+                margin: 0 5px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .mc-button {
+                --btn-size: 22pt;
+                font-size: 16px;
+                width: min(98vw, 280px);
+            }
+
+            .bp-carousel {
+                --btn-size: 22pt;
+                width: min(98vw, 280px);
+            }
+
+            .logo {
+                width: min(240px, 90%);
+            }
+
+            .container {
+                padding: 1rem 0.5rem;
+                padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+            }
+        }
+
+        @media (max-width: 320px) {
+            .mc-button {
+                --btn-size: 20pt;
+                font-size: 14px;
+                width: 100%;
+            }
+
+            .bp-carousel {
+                --btn-size: 20pt;
+                width: 100%;
+            }
+
+            .logo {
+                width: 90%;
+            }
+
+            .bp-carousel__header-title {
+                font-size: 14px;
+            }
+
+            .bp-carousel__caption {
+                font-size: 11px;
+            }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .holder {
+                min-height: auto;
+            }
+
+            .container {
+                min-height: auto;
+                padding: 1rem;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+
+            .logo {
+                width: min(200px, 50%);
+                margin-bottom: 0.5rem;
+            }
+
+            .mc-button {
+                --btn-size: 22pt;
+                margin: 0.15rem 0;
+                width: calc(50% - 0.5rem);
+            }
+
+            .bp-carousel {
+                --btn-size: 22pt;
+                margin-top: 0.5rem;
+                width: 100%;
+            }
+        }
+
+        @media (max-height: 400px) and (orientation: landscape) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            .logo {
+                width: min(150px, 40%);
+                margin-bottom: 0.25rem;
+            }
+
+            .mc-button {
+                --btn-size: 18pt;
+                margin: 0.1rem 0;
+            }
+
+            .bp-carousel {
+                display: none;
+            }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            html, body {
+                cursor: auto;
+            }
+
+            a {
+                cursor: auto;
+            }
+
+            .mc-button,
+            .bp-carousel__nav,
+            .bp-carousel__dot {
+                cursor: auto;
+            }
+
+            .mc-button {
+                min-height: 48px;
+            }
+
+            .mc-button:active .title {
+                background-color: rgba(100, 100, 255, 0.5);
+            }
+
+            .bp-carousel__nav {
+                min-width: 48px;
+                min-height: 48px;
+            }
+
+            .bp-carousel__nav:active {
+                background: rgba(100, 100, 255, 0.5);
+            }
+
+            .bp-carousel__dot {
+                min-width: 28px;
+                min-height: 28px;
+                margin: 0 5px;
+            }
+        }
+
+        @supports (padding: max(0px)) {
+            .container {
+                padding-left: max(0.75rem, env(safe-area-inset-left));
+                padding-right: max(0.75rem, env(safe-area-inset-right));
+            }
+        }
+
+        @media screen and (display-mode: standalone) {
+            .container {
+                padding-top: calc(1.5rem + env(safe-area-inset-top, 20px));
+            }
+        }
+
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .mc-button,
+            .bp-carousel__frame,
+            .bp-carousel__container {
+                border-width: 1.5px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .bp-carousel__slide--fade {
+                animation: none;
+            }
+
+            .bp-carousel__nav,
+            .bp-carousel__dot {
+                transition: none;
+            }
+        }
+
+        @media print {
+            .bg-video {
+                display: none;
+            }
+
+            .container {
+                background: white;
+                color: black;
+            }
+        }
+    </style>
+    <link rel="icon" type="image/png" href="resources/logo.png">
+</head>
+<body>
+    <video class="bg-video" autoplay loop muted playsinline webkit-playsinline>
+        <source src="https://7oaoepmc5nhfkhkk.public.blob.vercel-storage.com/bcgk.mp4" type="video/mp4">
+    </video>
+    <div class="holder">
+        <div class="container">
+            <img class="logo" src="resources/blueprint.png" alt="Blueprint Logo">
+            <a class="mc-button" href="https://forms.fillout.com/t/9zX6iFMaU5us"><span class="title">Register</span></a>
+            <a class="mc-button" href="/sponsors"><span class="title">Sponsors</span></a>
+            <a class="mc-button" href="/atlas"><span class="title">Atlas</span></a>
+            <a class="mc-button" href="/event"><span class="title">Event Details</span></a>
+            <a class="mc-button" href="https://giisrobotics.club"><span class="title">GIIS Robotics Club</span></a>
+            
+            <div class="bp-carousel" id="bp-carousel" aria-label="Image carousel" tabindex="0">
+                <div class="bp-carousel__header">
+                    <span class="bp-carousel__header-title">Highlights</span>
+                </div>
+
+                <div class="bp-carousel__frame">
+                    <div class="bp-carousel__container">
+                        <div class="bp-carousel__slide bp-carousel__slide--fade">
+                            <img class="bp-carousel__img" src="resources/bueprint.png" alt="Club" loading="lazy">
+                            <div class="bp-carousel__caption">Blueprint by GIIS Robotics Club</div>
+                        </div>
+                        <div class="bp-carousel__slide bp-carousel__slide--fade">
+                            <img class="bp-carousel__img" src="resources/tca.png" alt="Club" loading="lazy">
+                            <div class="bp-carousel__caption">Our Sponsor: <a href="https://www.treasurecapitalasia.com">Treasure Capital Asia</a></div>
+                        </div>
+                        <div class="bp-carousel__slide bp-carousel__slide--fade">
+                            <img class="bp-carousel__img" src="resources/xyz.png" alt="Club" loading="lazy">
+                            <div class="bp-carousel__caption">Our Sponsor: <a href="https://gen.xyz">Gen.xyz</a></div>
+                        </div>
+
+                        <button type="button" class="bp-carousel__nav bp-carousel__nav--prev" aria-label="Previous slide">❮</button>
+                        <button type="button" class="bp-carousel__nav bp-carousel__nav--next" aria-label="Next slide">❯</button>
+                    </div>
+
+                    <div class="bp-carousel__dots" aria-label="Slide navigation">
+                        <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 1"></span>
+                       <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 2"></span>
+                       <span class="bp-carousel__dot" role="button" tabindex="0" aria-label="Go to slide 3"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (() => {
+            const root = document.getElementById('bp-carousel');
+            if (!root) return;
+
+            const slides = Array.from(root.querySelectorAll('.bp-carousel__slide'));
+            const dots = Array.from(root.querySelectorAll('.bp-carousel__dot'));
+            const prevBtn = root.querySelector('.bp-carousel__nav--prev');
+            const nextBtn = root.querySelector('.bp-carousel__nav--next');
+            const container = root.querySelector('.bp-carousel__container');
+
+            let index = 0;
+            let touchStartX = 0;
+            let touchEndX = 0;
+
+            const render = () => {
+                slides.forEach((slide, i) => {
+                    slide.style.display = i === index ? 'block' : 'none';
+                });
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('is-active', i === index);
+                    dot.setAttribute('aria-pressed', i === index ? 'true' : 'false');
+                });
+            };
+
+            const goTo = (i) => {
+                if (!slides.length) return;
+                index = (i + slides.length) % slides.length;
+                render();
+            };
+
+            prevBtn?.addEventListener('click', () => goTo(index - 1));
+            nextBtn?.addEventListener('click', () => goTo(index + 1));
+
+            dots.forEach((dot, i) => {
+                dot.addEventListener('click', () => goTo(i));
+                dot.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        goTo(i);
+                    }
+                });
+            });
+
+            root.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    goTo(index - 1);
+                }
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    goTo(index + 1);
+                }
+            });
+
+            if (container) {
+                container.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                }, { passive: true });
+
+                container.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    const diff = touchStartX - touchEndX;
+                    const threshold = 50;
+
+                    if (Math.abs(diff) > threshold) {
+                        if (diff > 0) {
+                            goTo(index + 1);
+                        } else {
+                            goTo(index - 1);
+                        }
+                    }
+                }, { passive: true });
+            }
+
+            render();
+        })();
+    </script>
+</body>
+</html>
