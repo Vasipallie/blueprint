@@ -246,7 +246,8 @@
             flex-wrap: wrap;
         }
 
-        .broadcast-input {
+        .broadcast-input,
+        .search-input {
             flex: 1;
             min-width: 300px;
             padding: 0.75rem 1rem;
@@ -258,10 +259,15 @@
             box-shadow: inset 2px 2px #0008;
         }
 
-        .broadcast-input:focus {
+        .broadcast-input:focus,
+        .search-input:focus {
             outline: none;
             border-color: #ff4444;
-            box-shadow: inset 2px 2px #0008, 0 0 5px #ff4444;
+        }
+
+        .search-input {
+            max-width: 400px;
+            margin-bottom: 1.5rem;
         }
 
         .mc-button {
@@ -404,6 +410,45 @@
             background-color: rgba(68, 255, 68, 0.3);
             border-color: #44ff44;
             color: #44ff44;
+        }
+
+        /* Meal and Course Groups */
+        .meal-group,
+        .course-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
+            align-items: center;
+        }
+
+        .meal-btn {
+            padding: 0.4rem 0.6rem;
+            border: 2px solid #000;
+            background: #444;
+            color: #AAA;
+            font-family: 'mc7', monospace;
+            font-size: 0.75rem;
+            cursor: url('../views/resources/crosshair-32.png') 16 16, pointer;
+            box-shadow: inset -2px -3px #0006, inset 2px 2px #FFF3;
+            white-space: nowrap;
+            min-height: 32px;
+        }
+
+        .meal-btn.eaten {
+            background-color: rgba(68, 255, 68, 0.3);
+            border-color: #44ff44;
+            color: #44ff44;
+        }
+
+        .meal-btn:hover {
+            opacity: 0.8;
+        }
+
+        .day-separator {
+            width: 2px;
+            height: 30px;
+            background: #330000;
+            margin: 0 0.25rem;
         }
 
         /* Project Grading */
@@ -642,7 +687,9 @@
                     <p class="page-subtitle">Manage student lunch status and content access</p>
                 </div>
 
-                <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+                <input type="text" class="search-input" id="student-search" placeholder="Search students by name..." onkeyup="filterStudents()">
+
+                <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
                     <button class="mc-button" onclick="unlockAllCourses('beginner')">Unlock Beginner for All</button>
                     <button class="mc-button" onclick="unlockAllCourses('advanced')">Unlock Advanced for All</button>
                     <button class="mc-button" onclick="lockAllCourses()">Lock All Courses</button>
@@ -651,11 +698,10 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Student Name</th>
-                            <th>Email</th>
-                            <th>Day 1 Meals</th>
-                            <th>Day 2 Meals</th>
-                            <th>Course Access</th>
+                            <th style="width: 15%;">Student Name</th>
+                            <th style="width: 20%;">Email</th>
+                            <th style="width: 30%;">Meals</th>
+                            <th style="width: 20%;">Courses</th>
                         </tr>
                     </thead>
                     <tbody id="students-table-body">
@@ -755,25 +801,24 @@
         function renderStudentsTable() {
             const tbody = document.getElementById('students-table-body');
             tbody.innerHTML = mockStudents.map(student => `
-                <tr>
+                <tr class="student-row" data-name="${student.name.toLowerCase()}">
                     <td style="color: #ff6666;">${student.name}</td>
                     <td style="color: #AAA;">${student.email}</td>
                     <td>
-                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                            <button class="unlock-btn ${student.day1.snack1 ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day1', 'snack1')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Snack 1</button>
-                            <button class="unlock-btn ${student.day1.lunch ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day1', 'lunch')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Lunch</button>
-                            <button class="unlock-btn ${student.day1.snack2 ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day1', 'snack2')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Snack 2</button>
+                        <div class="meal-group">
+                            <span style="color: #888; font-size: 0.75rem; font-family: 'mc7', monospace;">D1:</span>
+                            <button class="meal-btn ${student.day1.snack1 ? 'eaten' : ''}" onclick="toggleMeal(${student.id}, 'day1', 'snack1')" title="Day 1 Snack 1">S1</button>
+                            <button class="meal-btn ${student.day1.lunch ? 'eaten' : ''}" onclick="toggleMeal(${student.id}, 'day1', 'lunch')" title="Day 1 Lunch">L</button>
+                            <button class="meal-btn ${student.day1.snack2 ? 'eaten' : ''}" onclick="toggleMeal(${student.id}, 'day1', 'snack2')" title="Day 1 Snack 2">S2</button>
+                            <div class="day-separator"></div>
+                            <span style="color: #888; font-size: 0.75rem; font-family: 'mc7', monospace;">D2:</span>
+                            <button class="meal-btn ${student.day2.snack1 ? 'eaten' : ''}" onclick="toggleMeal(${student.id}, 'day2', 'snack1')" title="Day 2 Snack 1">S1</button>
+                            <button class="meal-btn ${student.day2.lunch ? 'eaten' : ''}" onclick="toggleMeal(${student.id}, 'day2', 'lunch')" title="Day 2 Lunch">L</button>
+                            <button class="meal-btn ${student.day2.snack2 ? 'eaten' : ''}" onclick="toggleMeal(${student.id}, 'day2', 'snack2')" title="Day 2 Snack 2">S2</button>
                         </div>
                     </td>
                     <td>
-                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                            <button class="unlock-btn ${student.day2.snack1 ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day2', 'snack1')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Snack 1</button>
-                            <button class="unlock-btn ${student.day2.lunch ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day2', 'lunch')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Lunch</button>
-                            <button class="unlock-btn ${student.day2.snack2 ? 'unlocked' : ''}" onclick="toggleMeal(${student.id}, 'day2', 'snack2')" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">Snack 2</button>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="unlock-buttons">
+                        <div class="course-group">
                             <button class="unlock-btn ${student.beginnerUnlocked ? 'unlocked' : ''}" onclick="toggleCourse(${student.id}, 'beginner')">
                                 Beginner
                             </button>
@@ -784,6 +829,21 @@
                     </td>
                 </tr>
             `).join('');
+        }
+
+        // Filter Students
+        function filterStudents() {
+            const searchTerm = document.getElementById('student-search').value.toLowerCase();
+            const rows = document.querySelectorAll('.student-row');
+            
+            rows.forEach(row => {
+                const name = row.dataset.name;
+                if (name.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
         }
 
         // Toggle Meal Status
