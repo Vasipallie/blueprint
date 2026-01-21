@@ -2,36 +2,37 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import session from 'express-session';
+import { createClient } from '@supabase/supabase-js';
+
+// Supabase setup
+const supalink="https://sdhkohnfkjiwxpxobbsh.supabase.co"
+const supakey="sb_publishable_kaDnJWHieAUn9eTfVSinLw_Rft2IJ8g"
+const supabase = createClient(supalink, supakey); 
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Demo users (in production, use a database!)
-const users = {
-    'admin': 'blueprint2026',
-    'student': 'learn123',
-    'demo': 'demo'
-};
-
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'views')));
 app.use(express.json());
+
+// Session configuration
 app.use(session({
-    secret: 'blueprint-atlas-secret-key',
+    secret: 'blueprint-secret-key-change-in-production',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+    cookie: { secure: false } // Set to true in production with HTTPS
 }));
 
 // Middleware to check if user is logged in
 function requireLogin(req, res, next) {
-    if (req.session && req.session.user) {
-        next();
-    } else {
-        res.redirect('/atlas');
+    if (!req.session.user) {
+        return res.redirect('/atlas');
     }
+    next();
 }      
 
 app.route('/').get((req, res) => {
@@ -43,39 +44,23 @@ app.route('/sponsors').get((req, res) => {
 app.route('/event').get((req, res) => {
     res.render('event');
 });
-app.route('/').get((req, res) => {
-    res.render('index');
-});
-
-//Atlas 
 app.route('/atlas').get((req, res) => {
-    if (req.session && req.session.user) {
-        res.redirect('/atlas/dashboard');
-    } else {
-        res.render('atlas-login');
+    res.render('atlas-auth');
+});
+
+app.post('/atlas-login', async (req, res) => {
+    const { email, password } = req.body;
+    const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+    });
+    if (error) {
+        return res.status(401).json({ error: error.message });
     }
+    // Save user to session
+    req.session.user = data.user;
+    res.json({ success: true, user: data.user });
 });
-
-app.route('/atlas').post((req, res) => {
-    const { username, password } = req.body;
-    
-    if (users[username] && users[username] === password) {
-        req.session.user = username;
-        res.json({ success: true });
-    } else {
-        res.json({ success: false, message: 'Invalid username or password' });
-    }
-});
-
-app.route('/atlas/dashboard').get(requireLogin, (req, res) => {
-    res.render('atlas-dashboard', { username: req.session.user });
-});
-
-app.route('/atlas/logout').get((req, res) => {
-    req.session.destroy();
-    res.redirect('/atlas');
-});
-
 
 app.listen(3000, () => {
     console.log('Server started on http://localhost:3000');

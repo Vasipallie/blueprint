@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Atlas Dashboard | Blueprint</title>
+    <title>Atlas Login | Blueprint</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <style>
@@ -35,7 +35,9 @@
             line-height: 1.4;
             -webkit-text-size-adjust: 100%;
             -webkit-tap-highlight-color: transparent;
-            background: #111;
+            background-image: url('resources/logon.jpg');
+            background-size: cover;
+            background-position: center center;
         }
         
         .bg-video {
@@ -49,7 +51,6 @@
             height: auto;
             z-index: -1;
             object-fit: cover;
-            opacity: 0.4;
         }
 
         a {
@@ -61,316 +62,308 @@
             color: #99ccff;
         }
 
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
+        .holder {
+            position: relative;
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            position: relative;
+            width: 90%;
+            max-width: 450px;
             background: linear-gradient(to bottom, #000000e8, #060606cc);
-            border-bottom: 2px solid #000;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid #000;
             box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 2rem;
-            z-index: 100;
         }
 
-        .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+        .logo {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 0.5rem;
+            height: auto;
         }
 
-        .nav-logo {
-            height: 40px;
-        }
-
-        .nav-title {
+        .atlas-title {
             color: #FFFFA0;
             font-family: 'mc7', monospace;
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             text-shadow: 2px 2px #000A;
+            margin: 0.5rem 0 1.5rem 0;
             letter-spacing: 0.05em;
         }
 
-        .nav-user {
+        .login-form {
+            width: 100%;
             display: flex;
-            align-items: center;
+            flex-direction: column;
             gap: 1rem;
         }
 
-        .nav-username {
+        .form-group {
+            width: 100%;
+        }
+
+        .form-label {
+            display: block;
             color: #DDD;
             font-family: 'mc7', monospace;
             font-size: 0.9rem;
+            margin-bottom: 0.3rem;
             text-shadow: 2px 2px #000A;
         }
 
-        .logout-btn {
-            padding: 0.4rem 1rem;
+        .form-input {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 2px solid #000;
+            background: #333 url('resources/bgbtn.png') center / cover;
+            image-rendering: pixelated;
+            color: #ffff;
+            font-family: 'mc7', monospace;
+            font-size: 1rem;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
+            cursor: url('resources/crosshair-32.png') 16 16, text;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #FFFFA0;
+            background-color: rgba(100, 100, 255, 0.2);
+        }
+
+        .form-input::placeholder {
+            color: #888;
+        }
+
+        .mc-button {
+            --btn-size: clamp(24pt, 4vw, 34pt);
+            height: calc(var(--btn-size) * 1.1);
+            width: 100%;
+            padding: 0;
             border: 2px solid #000;
             background: #999 url('resources/bgbtn.png') center / cover;
             image-rendering: pixelated;
+            overflow: hidden;
+            white-space: nowrap;
+            -webkit-user-select: none;
+            user-select: none;
+            margin-top: 0.5rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            font-family: 'mc7', monospace;
+            font-size: clamp(16px, 2.2vw, 22px);
             color: #DDD;
+            touch-action: manipulation;
+        }
+
+        .mc-button .title {
+            width: 100%;
+            height: 100%;
+            padding-bottom: 0.3em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-shadow: 2px 2px #000A;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+        }
+
+        .mc-button:hover .title,
+        .mc-button:focus .title {
+            background-color: rgba(100, 100, 255, 0.45);
+            text-shadow: 2px 2px #202013CC;
+            color: #FFFFA0;
+            border: 3px solid #FFFFA0;
+            box-sizing: border-box;
+        }
+
+        .mc-button:active .title {
+            box-shadow: inset -2px -4px #0004, inset 2px 2px #FFF5;
+            background-color: rgba(100, 100, 255, 0.6);
+        }
+
+        .error-message {
+            color: #ff6b6b;
             font-family: 'mc7', monospace;
             font-size: 0.85rem;
-            cursor: url('resources/crosshair-32.png') 16 16, pointer;
-            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
-            text-decoration: none;
-        }
-
-        .logout-btn:hover {
-            background-color: rgba(100, 100, 255, 0.45);
-            color: #FFFFA0;
-            border-color: #FFFFA0;
-        }
-
-        .main-content {
-            margin-top: 60px;
-            padding: 2rem;
-            min-height: calc(100vh - 60px);
-        }
-
-        .dashboard-header {
-            margin-bottom: 2rem;
-        }
-
-        .dashboard-title {
-            color: #FFFFA0;
-            font-family: 'mc7', monospace;
-            font-size: 1.8rem;
             text-shadow: 2px 2px #000A;
-            margin: 0 0 0.5rem 0;
+            margin-top: 0.5rem;
+            display: none;
         }
 
-        .dashboard-subtitle {
+        .back-link {
+            margin-top: 1.5rem;
             color: #AAA;
             font-family: 'mc7', monospace;
-            font-size: 0.9rem;
-            text-shadow: 2px 2px #000A;
-        }
-
-        .articles-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .article-card {
-            background: linear-gradient(to bottom, #000000e8, #060606cc);
-            border: 2px solid #000;
-            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
-            padding: 1.5rem;
-            cursor: url('resources/crosshair-32.png') 16 16, pointer;
-            transition: all 0.2s ease;
-        }
-
-        .article-card:hover {
-            border-color: #FFFFA0;
-            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFFFA033;
-        }
-
-        .article-category {
-            color: #66aaff;
-            font-family: 'mc7', monospace;
-            font-size: 0.75rem;
-            text-shadow: 2px 2px #000A;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 0.5rem;
-        }
-
-        .article-title {
-            color: #FFFFA0;
-            font-family: 'mc7', monospace;
-            font-size: 1.1rem;
-            text-shadow: 2px 2px #000A;
-            margin: 0 0 0.75rem 0;
-        }
-
-        .article-excerpt {
-            color: #CCC;
-            font-family: mcten, monospace;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin-bottom: 1rem;
-        }
-
-        .article-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid #333;
-            padding-top: 0.75rem;
-        }
-
-        .article-date {
-            color: #888;
-            font-family: 'mc7', monospace;
-            font-size: 0.75rem;
-        }
-
-        .article-read-time {
-            color: #888;
-            font-family: 'mc7', monospace;
-            font-size: 0.75rem;
-        }
-
-        .read-btn {
-            display: inline-block;
-            padding: 0.4rem 1rem;
-            border: 2px solid #000;
-            background: #999 url('resources/bgbtn.png') center / cover;
-            image-rendering: pixelated;
-            color: #DDD;
-            font-family: 'mc7', monospace;
             font-size: 0.8rem;
-            cursor: url('resources/crosshair-32.png') 16 16, pointer;
-            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
-            text-decoration: none;
         }
 
-        .read-btn:hover {
-            background-color: rgba(100, 100, 255, 0.45);
-            color: #FFFFA0;
-            border-color: #FFFFA0;
-        }
-
-        .section-title {
-            color: #FFFFA0;
-            font-family: 'mc7', monospace;
-            font-size: 1.2rem;
-            text-shadow: 2px 2px #000A;
-            margin: 2rem 0 1rem 0;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #333;
-        }
-
-        /* Article Reader Modal */
-        .article-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 200;
-            overflow-y: auto;
-        }
-
-        .article-modal.active {
-            display: block;
-        }
-
-        .modal-content {
-            max-width: 800px;
-            margin: 80px auto 2rem auto;
-            padding: 2rem;
-            background: linear-gradient(to bottom, #0a0a0ae8, #111111cc);
-            border: 2px solid #000;
-            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-close {
-            padding: 0.4rem 0.8rem;
-            border: 2px solid #000;
-            background: #999 url('resources/bgbtn.png') center / cover;
-            image-rendering: pixelated;
-            color: #DDD;
-            font-family: 'mc7', monospace;
-            font-size: 1rem;
-            cursor: url('resources/crosshair-32.png') 16 16, pointer;
-            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
-        }
-
-        .modal-close:hover {
-            background-color: rgba(255, 100, 100, 0.45);
-            color: #ff6b6b;
-            border-color: #ff6b6b;
-        }
-
-        .modal-title {
-            color: #FFFFA0;
-            font-family: 'mc7', monospace;
-            font-size: 1.5rem;
-            text-shadow: 2px 2px #000A;
-            margin: 0;
-        }
-
-        .modal-body {
-            color: #DDD;
-            font-family: mcten, monospace;
-            font-size: 1rem;
-            line-height: 1.8;
-        }
-
-        .modal-body h2 {
-            color: #FFFFA0;
-            font-family: 'mc7', monospace;
-            font-size: 1.2rem;
-            margin-top: 1.5rem;
-        }
-
-        .modal-body p {
-            margin-bottom: 1rem;
-        }
-
-        .modal-body code {
-            background: #222;
-            padding: 0.2rem 0.4rem;
-            border-radius: 2px;
-            font-family: monospace;
+        .back-link a {
             color: #66aaff;
-        }
-
-        .modal-body pre {
-            background: #1a1a1a;
-            padding: 1rem;
-            overflow-x: auto;
-            border: 1px solid #333;
-            margin: 1rem 0;
         }
 
         @media (max-width: 768px) {
-            .navbar {
-                padding: 0 1rem;
+            .container {
+                width: 95%;
+                max-width: 400px;
+                padding: 1.5rem 1.25rem;
             }
 
-            .nav-title {
-                font-size: 1rem;
+            .logo {
+                width: 85%;
+                max-width: 250px;
             }
 
-            .main-content {
-                padding: 1rem;
+            .atlas-title {
+                font-size: 1.3rem;
+                margin: 0.5rem 0 1.25rem 0;
             }
 
-            .articles-grid {
-                grid-template-columns: 1fr;
+            .form-label {
+                font-size: 0.85rem;
             }
 
-            .modal-content {
-                margin: 60px 1rem 1rem 1rem;
-                padding: 1rem;
+            .form-input {
+                padding: 0.5rem 0.7rem;
+                font-size: 0.95rem;
+            }
+
+            .mc-button {
+                --btn-size: 26pt;
+                font-size: 18px;
+            }
+
+            .back-link {
+                margin-top: 1.25rem;
+                font-size: 0.75rem;
             }
         }
 
         @media (max-width: 480px) {
-            .nav-username {
-                display: none;
+            html, body {
+                font-size: 16px;
             }
 
-            .dashboard-title {
-                font-size: 1.3rem;
+            .holder {
+                padding: 1rem;
+                padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 1.25rem 1rem;
+                padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+                padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+            }
+
+            .logo {
+                width: 80%;
+                max-width: 220px;
+                margin-bottom: 0.25rem;
+            }
+
+            .atlas-title {
+                font-size: 1.2rem;
+                margin: 0.4rem 0 1rem 0;
+            }
+
+            .login-form {
+                gap: 0.85rem;
+            }
+
+            .form-label {
+                font-size: 0.8rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .form-input {
+                padding: 0.55rem 0.65rem;
+                font-size: 16px; 
+            }
+
+            .mc-button {
+                --btn-size: 24pt;
+                min-height: 48px;
+                font-size: 16px;
+                margin-top: 0.4rem;
+            }
+
+            .error-message {
+                font-size: 0.75rem;
+            }
+
+            .back-link {
+                margin-top: 1rem;
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .container {
+                padding: 1rem 0.75rem;
+            }
+
+            .logo {
+                width: 75%;
+                max-width: 180px;
+            }
+
+            .atlas-title {
+                font-size: 1.1rem;
+            }
+
+            .form-input {
+                padding: 0.5rem 0.6rem;
+            }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .holder {
+                min-height: auto;
+                padding: 0.5rem;
+            }
+
+            .container {
+                padding: 1rem 1.5rem;
+                max-width: 500px;
+            }
+
+            .logo {
+                max-width: 150px;
+                margin-bottom: 0.25rem;
+            }
+
+            .atlas-title {
+                font-size: 1rem;
+                margin: 0.25rem 0 0.75rem 0;
+            }
+
+            .login-form {
+                gap: 0.5rem;
+            }
+
+            .form-input {
+                padding: 0.4rem 0.6rem;
+            }
+
+            .mc-button {
+                --btn-size: 20pt;
+                min-height: 40px;
+                margin-top: 0.25rem;
+            }
+
+            .back-link {
+                margin-top: 0.75rem;
             }
         }
     </style>
@@ -380,257 +373,48 @@
         <source src="resources/mc.mp4" type="video/mp4">
     </video>
     
-    <nav class="navbar">
-        <div class="nav-brand">
-            <img src="resources/logo.png" alt="Blueprint Logo" class="nav-logo">
-            <span class="nav-title">ATLAS</span>
-        </div>
-        <div class="nav-user">
-            <span class="nav-username">Welcome, <span id="usernameDisplay"><%= username %></span></span>
-            <a href="/atlas/logout" class="logout-btn">LOGOUT</a>
-        </div>
-    </nav>
-
-    <main class="main-content">
-        <div class="dashboard-header">
-            <h1 class="dashboard-title">Learning Dashboard</h1>
-            <p class="dashboard-subtitle">Explore articles and resources for Blueprint 2026</p>
-        </div>
-
-        <h2 class="section-title">Featured Articles</h2>
-        <div class="articles-grid">
-            <div class="article-card" onclick="openArticle('intro-robotics')">
-                <div class="article-category">Robotics</div>
-                <h3 class="article-title">Introduction to Robotics</h3>
-                <p class="article-excerpt">Learn the fundamentals of robotics, including sensors, actuators, and basic programming concepts for autonomous systems.</p>
-                <div class="article-meta">
-                    <span class="article-date">Jan 15, 2026</span>
-                    <span class="article-read-time">5 min read</span>
-                </div>
-            </div>
-
-            <div class="article-card" onclick="openArticle('arduino-basics')">
-                <div class="article-category">Hardware</div>
-                <h3 class="article-title">Arduino Basics for Beginners</h3>
-                <p class="article-excerpt">Get started with Arduino microcontrollers. This guide covers setup, basic circuits, and your first LED project.</p>
-                <div class="article-meta">
-                    <span class="article-date">Jan 12, 2026</span>
-                    <span class="article-read-time">8 min read</span>
-                </div>
-            </div>
-
-            <div class="article-card" onclick="openArticle('python-automation')">
-                <div class="article-category">Programming</div>
-                <h3 class="article-title">Python for Automation</h3>
-                <p class="article-excerpt">Discover how to use Python to automate tasks, control hardware, and build intelligent systems for your robotics projects.</p>
-                <div class="article-meta">
-                    <span class="article-date">Jan 10, 2026</span>
-                    <span class="article-read-time">10 min read</span>
-                </div>
-            </div>
-
-            <div class="article-card" onclick="openArticle('sensor-guide')">
-                <div class="article-category">Components</div>
-                <h3 class="article-title">Complete Sensor Guide</h3>
-                <p class="article-excerpt">An in-depth look at different types of sensors used in robotics: ultrasonic, IR, gyroscope, accelerometer, and more.</p>
-                <div class="article-meta">
-                    <span class="article-date">Jan 8, 2026</span>
-                    <span class="article-read-time">12 min read</span>
-                </div>
-            </div>
-
-            <div class="article-card" onclick="openArticle('competition-prep')">
-                <div class="article-category">Competition</div>
-                <h3 class="article-title">Blueprint Competition Prep</h3>
-                <p class="article-excerpt">Everything you need to know to prepare for Blueprint 2026. Rules, tips, and strategies from past winners.</p>
-                <div class="article-meta">
-                    <span class="article-date">Jan 5, 2026</span>
-                    <span class="article-read-time">7 min read</span>
-                </div>
-            </div>
-
-            <div class="article-card" onclick="openArticle('3d-printing')">
-                <div class="article-category">Fabrication</div>
-                <h3 class="article-title">3D Printing for Robotics</h3>
-                <p class="article-excerpt">Learn how to design and 3D print custom parts for your robot. Includes tips on materials, tolerances, and design software.</p>
-                <div class="article-meta">
-                    <span class="article-date">Jan 3, 2026</span>
-                    <span class="article-read-time">9 min read</span>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Article Modal -->
-    <div class="article-modal" id="articleModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title" id="modalTitle">Article Title</h2>
-                <button class="modal-close" onclick="closeArticle()">✕</button>
-            </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Article content loaded here -->
-            </div>
+    <div class="holder">
+        <div class="container">
+            <img src="resources/blueprint.png" alt="Blueprint Logo" class="logo">
+            <h1 class="atlas-title">Welcome to Atlas</h1>
+            
+            <form class="login-form" id="loginForm">
+                
+            </form>
+            
+            <p class="back-link">
+                <a href="/">← Back to Home</a>
+            </p>
         </div>
     </div>
 
     <script>
-        const articles = {
-            'intro-robotics': {
-                title: 'Introduction to Robotics',
-                content: `
-                    <p>Robotics is an interdisciplinary field that combines mechanical engineering, electrical engineering, and computer science to design, build, and program robots.</p>
-                    
-                    <h2>What is a Robot?</h2>
-                    <p>A robot is a machine capable of carrying out complex actions automatically, especially one programmable by a computer. Robots can be autonomous or semi-autonomous and range from humanoid robots to industrial robots and drones.</p>
-                    
-                    <h2>Key Components</h2>
-                    <p>Every robot consists of several key components:</p>
-                    <p><strong>1. Sensors:</strong> Allow the robot to perceive its environment (cameras, ultrasonic sensors, touch sensors)</p>
-                    <p><strong>2. Actuators:</strong> Enable movement (motors, servos, pneumatic systems)</p>
-                    <p><strong>3. Controller:</strong> The "brain" that processes information and makes decisions (microcontrollers like Arduino)</p>
-                    <p><strong>4. Power Supply:</strong> Provides energy (batteries, power adapters)</p>
-                    
-                    <h2>Getting Started</h2>
-                    <p>To begin your robotics journey, start with a simple kit like Arduino or Raspberry Pi. These platforms offer excellent documentation and community support for beginners.</p>
-                `
-            },
-            'arduino-basics': {
-                title: 'Arduino Basics for Beginners',
-                content: `
-                    <p>Arduino is an open-source electronics platform based on easy-to-use hardware and software. It's perfect for beginners and experts alike.</p>
-                    
-                    <h2>What You'll Need</h2>
-                    <p>• Arduino Uno or similar board<br>• USB cable<br>• Breadboard<br>• LEDs and resistors<br>• Jumper wires</p>
-                    
-                    <h2>Your First Program</h2>
-                    <p>The classic "Blink" sketch is the Hello World of Arduino:</p>
-                    <pre><code>void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
-}
-
-void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(1000);
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(1000);
-}</code></pre>
-                    
-                    <h2>Understanding the Code</h2>
-                    <p><code>setup()</code> runs once when the Arduino powers on. Use it to initialize pins and variables.</p>
-                    <p><code>loop()</code> runs continuously after setup. This is where your main program logic goes.</p>
-                `
-            },
-            'python-automation': {
-                title: 'Python for Automation',
-                content: `
-                    <p>Python is one of the most popular programming languages for automation and robotics due to its simplicity and powerful libraries.</p>
-                    
-                    <h2>Why Python?</h2>
-                    <p>• Easy to learn and read<br>• Extensive library ecosystem<br>• Great for prototyping<br>• Works well with hardware (Raspberry Pi, serial communication)</p>
-                    
-                    <h2>Controlling Hardware</h2>
-                    <p>Use the <code>pyserial</code> library to communicate with Arduino:</p>
-                    <pre><code>import serial
-import time
-
-arduino = serial.Serial('COM3', 9600)
-time.sleep(2)  # Wait for connection
-
-arduino.write(b'1')  # Send command
-response = arduino.readline()
-print(response)</code></pre>
-                    
-                    <h2>Automation Scripts</h2>
-                    <p>Python excels at automating repetitive tasks, data collection, and creating user interfaces for your robotics projects.</p>
-                `
-            },
-            'sensor-guide': {
-                title: 'Complete Sensor Guide',
-                content: `
-                    <p>Sensors are the eyes and ears of your robot, allowing it to perceive and interact with its environment.</p>
-                    
-                    <h2>Distance Sensors</h2>
-                    <p><strong>Ultrasonic (HC-SR04):</strong> Uses sound waves to measure distance. Range: 2cm - 400cm. Great for obstacle detection.</p>
-                    <p><strong>Infrared (IR):</strong> Uses light to detect objects. Better for short range and line following.</p>
-                    
-                    <h2>Motion Sensors</h2>
-                    <p><strong>Gyroscope:</strong> Measures angular velocity (rotation speed).</p>
-                    <p><strong>Accelerometer:</strong> Measures linear acceleration and tilt.</p>
-                    <p><strong>IMU:</strong> Combines gyro + accelerometer + magnetometer for complete motion tracking.</p>
-                    
-                    <h2>Other Common Sensors</h2>
-                    <p>• <strong>Touch sensors:</strong> Detect physical contact<br>• <strong>Light sensors (LDR):</strong> Measure ambient light<br>• <strong>Temperature sensors:</strong> Monitor heat levels<br>• <strong>Color sensors:</strong> Identify colors for sorting tasks</p>
-                `
-            },
-            'competition-prep': {
-                title: 'Blueprint Competition Prep',
-                content: `
-                    <p>Blueprint 2026 is coming up on March 30th and 31st! Here's everything you need to know to prepare.</p>
-                    
-                    <h2>Competition Categories</h2>
-                    <p>• Line Following<br>• Maze Solving<br>• Sumo Wrestling<br>• Creative Robotics</p>
-                    
-                    <h2>Tips from Past Winners</h2>
-                    <p><strong>1. Start Early:</strong> Don't wait until the last week. Build and test iteratively.</p>
-                    <p><strong>2. Keep It Simple:</strong> A reliable simple robot beats an unreliable complex one.</p>
-                    <p><strong>3. Test, Test, Test:</strong> Run your robot on different surfaces and lighting conditions.</p>
-                    <p><strong>4. Have Backup Parts:</strong> Bring extra motors, sensors, and batteries.</p>
-                    
-                    <h2>Day of Competition</h2>
-                    <p>• Arrive early for setup<br>• Bring tools and laptop<br>• Stay calm during debugging<br>• Have fun and learn from others!</p>
-                `
-            },
-            '3d-printing': {
-                title: '3D Printing for Robotics',
-                content: `
-                    <p>3D printing allows you to create custom parts for your robot that would be impossible or expensive to make otherwise.</p>
-                    
-                    <h2>Getting Started</h2>
-                    <p>You don't need your own printer - many schools and makerspaces have 3D printers available. Learn the basics of CAD software like Fusion 360 or TinkerCAD.</p>
-                    
-                    <h2>Design Tips</h2>
-                    <p><strong>Tolerances:</strong> Add 0.2-0.3mm clearance for moving parts and press-fits.</p>
-                    <p><strong>Wall Thickness:</strong> Keep walls at least 1.2mm thick for strength.</p>
-                    <p><strong>Overhangs:</strong> Avoid angles greater than 45° without supports.</p>
-                    
-                    <h2>Materials</h2>
-                    <p><strong>PLA:</strong> Easy to print, good for prototypes. Not heat resistant.</p>
-                    <p><strong>PETG:</strong> Stronger and more flexible than PLA. Good all-rounder.</p>
-                    <p><strong>ABS:</strong> Heat resistant and durable. Requires enclosed printer.</p>
-                    
-                    <h2>Useful Parts to Print</h2>
-                    <p>• Motor mounts<br>• Sensor brackets<br>• Wheels and gears<br>• Custom enclosures<br>• Cable management clips</p>
-                `
-            }
-        };
-
-        function openArticle(articleId) {
-            const article = articles[articleId];
-            if (article) {
-                document.getElementById('modalTitle').textContent = article.title;
-                document.getElementById('modalBody').innerHTML = article.content;
-                document.getElementById('articleModal').classList.add('active');
-                document.body.style.overflow = 'hidden';
-            }
-        }
-
-        function closeArticle() {
-            document.getElementById('articleModal').classList.remove('active');
-            document.body.style.overflow = 'auto';
-        }
-
-        // Close modal on escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeArticle();
-            }
-        });
-
-        // Close modal on background click
-        document.getElementById('articleModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('articleModal')) {
-                closeArticle();
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            
+            try {
+                const response = await fetch('/atlas-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = '/atlas/dashboard';
+                } else {
+                    errorMsg.style.display = 'block';
+                    errorMsg.textContent = data.message || 'Invalid email or password';
+                }
+            } catch (error) {
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = 'An error occurred. Please try again.';
             }
         });
     </script>

@@ -37,6 +37,7 @@
             -webkit-tap-highlight-color: transparent;
             background-image: url('resources/logon.jpg');
             background-size: cover;
+            background-position: center center;
         }
         
         .bg-video {
@@ -77,7 +78,7 @@
             width: 90%;
             max-width: 450px;
             background: linear-gradient(to bottom, #000000e8, #060606cc);
-            padding: 2rem 2rem;
+            padding: 2rem 1rem;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -127,7 +128,7 @@
             border: 2px solid #000;
             background: #333 url('resources/bgbtn.png') center / cover;
             image-rendering: pixelated;
-            color: #FFF;
+            color: #ffff;
             font-family: 'mc7', monospace;
             font-size: 1rem;
             box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
@@ -388,7 +389,7 @@
                     <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required>
                 </div>
                 
-                <p class="error-message" id="errorMsg">Invalid username or password</p>
+                <p class="error-message" id="errorMsg">Invalid email or password</p>
                 
                 <button type="submit" class="mc-button">
                     <span class="title">LOGIN</span>
@@ -404,17 +405,17 @@
     <script>
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('errorMsg');
             
             try {
-                const response = await fetch('/atlas/login', {
+                const response = await fetch('/atlas-login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ email, password })
                 });
                 
                 const data = await response.json();
@@ -423,7 +424,7 @@
                     window.location.href = '/atlas/dashboard';
                 } else {
                     errorMsg.style.display = 'block';
-                    errorMsg.textContent = data.message || 'Invalid username or password';
+                    errorMsg.textContent = data.message || 'Invalid email or password';
                 }
             } catch (error) {
                 errorMsg.style.display = 'block';
