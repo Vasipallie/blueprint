@@ -19,12 +19,12 @@ app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'views')));
 app.use(express.json());
 
-// Session configuration
+// Session middleware
 app.use(session({
-    secret: 'blueprint-secret-key-change-in-production',
+    secret: 'blueprint-secret-key',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // Set to true in production with HTTPS
+    cookie: { secure: false } // Set to true if using HTTPS
 }));
 
 // Middleware to check if user is logged in
@@ -44,23 +44,40 @@ app.route('/sponsors').get((req, res) => {
 app.route('/event').get((req, res) => {
     res.render('event');
 });
+app.route('/dashboard').get(requireLogin, (req, res) => {
+    res.render('atlas-dashboard', { user: req.session.user });
+}
+);
 app.route('/atlas').get((req, res) => {
-    res.render('atlas-auth');
+    try {
+        const user = req.session.user;
+        if (user) {
+            return res.redirect('/dashboard');
+        }
+    } catch (error) {
+        console.error('Error checking session:', error);
+    }
+    res.render('atlas');
 });
 
-app.post('/atlas-login', async (req, res) => {
+app.post('/login', async (req, res) => {
     const { email, password } = req.body;
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-    });
-    if (error) {
-        return res.status(401).json({ error: error.message });
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+        if (error || !data.user) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        req.session.user = data.user;
+        res.redirect('/dashboard');
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-    // Save user to session
-    req.session.user = data.user;
-    res.json({ success: true, user: data.user });
 });
+
 
 app.listen(3000, () => {
     console.log('Server started on http://localhost:3000');

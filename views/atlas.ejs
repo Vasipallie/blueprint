@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Atlas Login | Blueprint</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+        @font-face {
+            font-family: mcten;
+            src: url('resources/mc10.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: mc7;
+            src: url('resources/mc7.woff2') format('woff2');
+        }
+        
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+            font-family: mcten, monospace;
+            font-size: clamp(16px, 2.5vw, 22px);
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
+            line-height: 1.4;
+            -webkit-text-size-adjust: 100%;
+            -webkit-tap-highlight-color: transparent;
+            background-image: url('resources/logon.jpg');
+            background-size: cover;
+            background-position: center center;
+        }
+        
+        .bg-video {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+            object-fit: cover;
+        }
+
+        a {
+            color: #66aaff;
+            text-decoration: underline;
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
+        }
+        a:hover {
+            color: #99ccff;
+        }
+
+        .holder {
+            position: relative;
+            min-height: 100vh;
+            min-height: 100dvh;
+            width: 100%;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            position: relative;
+            width: 90%;
+            max-width: 450px;
+            background: linear-gradient(to bottom, #000000e8, #060606cc);
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid #000;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
+        }
+
+        .logo {
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 0.5rem;
+            height: auto;
+        }
+
+        .atlas-title {
+            color: #FFFFA0;
+            font-family: 'mc7', monospace;
+            font-size: 1.4rem;
+            text-shadow: 2px 2px #000A;
+            margin: 0.5rem 0 1.5rem 0;
+            letter-spacing: 0.05em;
+        }
+
+        .login-form {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group {
+            width: 100%;
+        }
+
+        .form-label {
+            display: block;
+            color: #DDD;
+            font-family: 'mc7', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+            text-shadow: 2px 2px #000A;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.6rem 0.8rem;
+            border: 2px solid #000;
+            background: #333 url('resources/bgbtn.png') center / cover;
+            image-rendering: pixelated;
+            color: #ffff;
+            font-family: 'mc7', monospace;
+            font-size: 1rem;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
+            cursor: url('resources/crosshair-32.png') 16 16, text;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #FFFFA0;
+            background-color: rgba(100, 100, 255, 0.2);
+        }
+
+        .form-input::placeholder {
+            color: #888;
+        }
+
+        .mc-button {
+            --btn-size: clamp(24pt, 4vw, 34pt);
+            height: calc(var(--btn-size) * 1.1);
+            width: 100%;
+            padding: 0;
+            border: 2px solid #000;
+            background: #999 url('resources/bgbtn.png') center / cover;
+            image-rendering: pixelated;
+            overflow: hidden;
+            white-space: nowrap;
+            -webkit-user-select: none;
+            user-select: none;
+            margin-top: 0.5rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            font-family: 'mc7', monospace;
+            font-size: clamp(16px, 2.2vw, 22px);
+            color: #DDD;
+            touch-action: manipulation;
+        }
+
+        .mc-button .title {
+            width: 100%;
+            height: 100%;
+            padding-bottom: 0.3em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-shadow: 2px 2px #000A;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+        }
+
+        .mc-button:hover .title,
+        .mc-button:focus .title {
+            background-color: rgba(100, 100, 255, 0.45);
+            text-shadow: 2px 2px #202013CC;
+            color: #FFFFA0;
+            border: 3px solid #FFFFA0;
+            box-sizing: border-box;
+        }
+
+        .mc-button:active .title {
+            box-shadow: inset -2px -4px #0004, inset 2px 2px #FFF5;
+            background-color: rgba(100, 100, 255, 0.6);
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-family: 'mc7', monospace;
+            font-size: 0.85rem;
+            text-shadow: 2px 2px #000A;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .back-link {
+            margin-top: 1.5rem;
+            color: #AAA;
+            font-family: 'mc7', monospace;
+            font-size: 0.8rem;
+        }
+
+        .back-link a {
+            color: #66aaff;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+                max-width: 400px;
+                padding: 1.5rem 1.25rem;
+            }
+
+            .logo {
+                width: 85%;
+                max-width: 250px;
+            }
+
+            .atlas-title {
+                font-size: 1.3rem;
+                margin: 0.5rem 0 1.25rem 0;
+            }
+
+            .form-label {
+                font-size: 0.85rem;
+            }
+
+            .form-input {
+                padding: 0.5rem 0.7rem;
+                font-size: 0.95rem;
+            }
+
+            .mc-button {
+                --btn-size: 26pt;
+                font-size: 18px;
+            }
+
+            .back-link {
+                margin-top: 1.25rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            html, body {
+                font-size: 16px;
+            }
+
+            .holder {
+                padding: 1rem;
+                padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+            }
+
+            .container {
+                width: 100%;
+                max-width: none;
+                padding: 1.25rem 1rem;
+                padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+                padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+            }
+
+            .logo {
+                width: 80%;
+                max-width: 220px;
+                margin-bottom: 0.25rem;
+            }
+
+            .atlas-title {
+                font-size: 1.2rem;
+                margin: 0.4rem 0 1rem 0;
+            }
+
+            .login-form {
+                gap: 0.85rem;
+            }
+
+            .form-label {
+                font-size: 0.8rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .form-input {
+                padding: 0.55rem 0.65rem;
+                font-size: 16px; 
+            }
+
+            .mc-button {
+                --btn-size: 24pt;
+                min-height: 48px;
+                font-size: 16px;
+                margin-top: 0.4rem;
+            }
+
+            .error-message {
+                font-size: 0.75rem;
+            }
+
+            .back-link {
+                margin-top: 1rem;
+                font-size: 0.7rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .container {
+                padding: 1rem 0.75rem;
+            }
+
+            .logo {
+                width: 75%;
+                max-width: 180px;
+            }
+
+            .atlas-title {
+                font-size: 1.1rem;
+            }
+
+            .form-input {
+                padding: 0.5rem 0.6rem;
+            }
+        }
+
+        @media (max-height: 500px) and (orientation: landscape) {
+            .holder {
+                min-height: auto;
+                padding: 0.5rem;
+            }
+
+            .container {
+                padding: 1rem 1.5rem;
+                max-width: 500px;
+            }
+
+            .logo {
+                max-width: 150px;
+                margin-bottom: 0.25rem;
+            }
+
+            .atlas-title {
+                font-size: 1rem;
+                margin: 0.25rem 0 0.75rem 0;
+            }
+
+            .login-form {
+                gap: 0.5rem;
+            }
+
+            .form-input {
+                padding: 0.4rem 0.6rem;
+            }
+
+            .mc-button {
+                --btn-size: 20pt;
+                min-height: 40px;
+                margin-top: 0.25rem;
+            }
+
+            .back-link {
+                margin-top: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <video class="bg-video" autoplay muted loop playsinline>
+        <source src="resources/mc.mp4" type="video/mp4">
+    </video>
+    
+    <div class="holder">
+        <div class="container">
+            <img src="resources/blueprint.png" alt="Blueprint Logo" class="logo">
+            <h1 class="atlas-title">Welcome to Atlas</h1>
+            
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required>
+                </div>
+                
+                <p class="error-message" id="errorMsg">Invalid email or password</p>
+                
+                <button type="submit" class="mc-button">
+                    <span class="title">LOGIN</span>
+                </button>
+            </form>
+            
+            <p class="back-link">
+                <a href="/">← Back to Home</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = '/atlas/dashboard';
+                } else {
+                    errorMsg.style.display = 'block';
+                    errorMsg.textContent = data.message || 'Invalid email or password';
+                }
+            } catch (error) {
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = 'An error occurred. Please try again.';
+            }
+        });
+    </script>
+</body>
+</html>

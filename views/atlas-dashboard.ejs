@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#1a3a1a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Atlas Login | Blueprint</title>
+    <title>Student Portal | Atlas</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <style>
         @font-face {
             font-family: mcten;
-            src: url('resources/mc10.woff2') format('woff2');
+            src: url('../views/resources/mc10.woff2') format('woff2');
         }
         @font-face {
             font-family: mc7;
-            src: url('resources/mc7.woff2') format('woff2');
+            src: url('../views/resources/mc7.woff2') format('woff2');
         }
         
         *, *::before, *::after {
@@ -28,395 +28,712 @@
             padding: 0;
             height: 100%;
             overflow-x: hidden;
-            overflow-y: auto;
             font-family: mcten, monospace;
-            font-size: clamp(16px, 2.5vw, 22px);
-            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
+            font-size: 14px;
+            cursor: url('../views/resources/crosshair-32.png') 16 16, crosshair;
             line-height: 1.4;
-            -webkit-text-size-adjust: 100%;
-            -webkit-tap-highlight-color: transparent;
-            background-image: url('resources/logon.jpg');
-            background-size: cover;
-            background-position: center center;
-        }
-        
-        .bg-video {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            min-width: 100%;
-            min-height: 100%;
-            width: auto;
-            height: auto;
-            z-index: -1;
-            object-fit: cover;
+            background: #0a0a0a;
+            color: #DDD;
         }
 
-        a {
-            color: #66aaff;
-            text-decoration: underline;
-            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
-        }
-        a:hover {
-            color: #99ccff;
+        /* Custom Scrollbar - Green Theme */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
         }
 
-        .holder {
-            position: relative;
-            min-height: 100vh;
-            min-height: 100dvh;
-            width: 100%;
-            display: flex;
-            flex-direction: row;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .container {
-            position: relative;
-            width: 90%;
-            max-width: 450px;
-            background: linear-gradient(to bottom, #000000e8, #060606cc);
-            padding: 2rem 1rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
             border: 2px solid #000;
-            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
+            box-shadow: inset 2px 2px #0008;
         }
 
-        .logo {
-            width: 100%;
-            max-width: 300px;
-            margin-bottom: 0.5rem;
-            height: auto;
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #2a5a2a, #1a3a1a);
+            border: 2px solid #000;
+            box-shadow: inset -2px -2px #0006, inset 2px 2px #44ff4433;
         }
 
-        .atlas-title {
-            color: #FFFFA0;
-            font-family: 'mc7', monospace;
-            font-size: 1.4rem;
-            text-shadow: 2px 2px #000A;
-            margin: 0.5rem 0 1.5rem 0;
-            letter-spacing: 0.05em;
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, #3a7a3a, #2a5a2a);
         }
 
-        .login-form {
-            width: 100%;
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #2a5a2a #0a0a0a;
+        }
+
+        /* Minecraft/Grass Theme */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(to bottom, #1a3a1a, #0d1a0d);
+            border-right: 4px solid #000;
+            box-shadow: inset -4px -4px #0006, inset 2px 2px #44ff4433;
+            padding: 1rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+        }
+
+        .sidebar-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 2px solid #1a4a1a;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-logo {
+            color: #44ff44;
+            font-family: 'mc7', monospace;
+            font-size: 1.8rem;
+            text-shadow: 3px 3px #000;
+            letter-spacing: 0.05em;
+            margin: 0;
+        }
+
+        .sidebar-subtitle {
+            color: #888;
+            font-family: 'mc7', monospace;
+            font-size: 0.75rem;
+            margin: 0.25rem 0 0 0;
+        }
+
+        .sidebar-nav {
+            padding: 0;
+            margin: 0;
+            list-style: none;
+            flex: 1;
+        }
+
+        .sidebar-nav-item {
+            margin: 0.25rem 0.75rem;
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            color: #CCC;
+            text-decoration: none;
+            font-family: 'mc7', monospace;
+            font-size: 0.95rem;
+            border: 3px solid #000;
+            background: #3a5a3a url('../views/resources/bgbtn.png') center / cover;
+            image-rendering: pixelated;
+            box-shadow: inset -3px -4px #0006, inset 2px 2px #FFF3;
+            cursor: url('../views/resources/crosshair-32.png') 16 16, pointer;
+            transition: all 0.2s;
+        }
+
+        .sidebar-nav-link:hover,
+        .sidebar-nav-link.active {
+            background-color: rgba(68, 255, 68, 0.3);
+            color: #44ff44;
+            border-color: #44ff44;
+            box-shadow: inset -3px -4px #0006, inset 2px 2px #44ff4433;
+        }
+
+        /* User Profile Section */
+        .user-profile {
+            padding: 1rem 1.5rem;
+            border-top: 2px solid #1a4a1a;
+            margin-top: auto;
+        }
+
+        .user-profile-card {
+            background: linear-gradient(to bottom, #0d1a0d, #050a05);
+            border: 3px solid #000;
+            box-shadow: inset -2px -3px #0006, inset 2px 2px #44ff4433;
+            padding: 1rem;
+        }
+
+        .user-name {
+            color: #44ff44;
+            font-family: 'mc7', monospace;
+            font-size: 0.95rem;
+            margin: 0 0 0.25rem 0;
+        }
+
+        .user-team {
+            color: #888;
+            font-family: 'mc7', monospace;
+            font-size: 0.75rem;
+            margin: 0;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            flex: 1;
+            padding: 2rem;
+            background: linear-gradient(to bottom, #111, #0a0a0a);
+        }
+
+        /* Header */
+        .content-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 3px solid #1a4a1a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title {
+            color: #44ff44;
+            font-family: 'mc7', monospace;
+            font-size: 2rem;
+            text-shadow: 3px 3px #000;
+            margin: 0;
+        }
+
+        .notification-bell {
+            padding: 0.75rem 1rem;
+            border: 3px solid #000;
+            background: #555 url('../views/resources/bgbtn.png') center / cover;
+            image-rendering: pixelated;
+            color: #DDD;
+            font-family: 'mc7', monospace;
+            font-size: 0.9rem;
+            cursor: url('../views/resources/crosshair-32.png') 16 16, pointer;
+            box-shadow: inset -3px -4px #0006, inset 2px 2px #FFF5;
+        }
+
+        .notification-bell:hover {
+            background-color: rgba(68, 255, 68, 0.3);
+            color: #44ff44;
+            border-color: #44ff44;
+        }
+
+        /* Dashboard Layout */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+        }
+
+        /* Course Cards */
+        .courses-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            color: #88dd88;
+            font-family: 'mc7', monospace;
+            font-size: 1.3rem;
+            text-shadow: 2px 2px #000;
+            margin: 0 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #1a4a1a;
+        }
+
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .course-card {
+            background: linear-gradient(to bottom, #1a3a1a, #0d1a0d);
+            border: 4px solid #000;
+            box-shadow: inset -4px -6px #0006, inset 3px 3px #44ff4433;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .course-card.locked {
+            opacity: 0.6;
+            background: linear-gradient(to bottom, #2a2a2a, #1a1a1a);
+        }
+
+        .course-card.locked::after {
+            content: '🔒';
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .course-title {
+            color: #44ff44;
+            font-family: 'mc7', monospace;
+            font-size: 1.1rem;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .course-card.locked .course-title {
+            color: #888;
+        }
+
+        .course-description {
+            color: #AAA;
+            font-family: mcten, monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+        }
+
+        .course-card.locked .course-description {
+            color: #666;
+        }
+
+        .mc-button {
+            padding: 0.75rem 1.5rem;
+            border: 4px solid #000;
+            background: #555 url('../views/resources/bgbtn.png') center / cover;
+            image-rendering: pixelated;
+            color: #DDD;
+            font-family: 'mc7', monospace;
+            font-size: 1rem;
+            cursor: url('../views/resources/crosshair-32.png') 16 16, pointer;
+            box-shadow: inset -4px -6px #0006, inset 3px 3px #FFF5;
+            white-space: nowrap;
+            min-height: 44px;
+            width: 100%;
+        }
+
+        .mc-button.primary {
+            background-color: rgba(68, 255, 68, 0.3);
+            color: #44ff44;
+            border-color: #2a5a2a;
+        }
+
+        .mc-button.primary:hover {
+            background-color: rgba(68, 255, 68, 0.5);
+            border-color: #44ff44;
+        }
+
+        .mc-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .mc-button:active:not(:disabled) {
+            box-shadow: inset 3px 5px #0006;
+        }
+
+        /* Reminders Sidebar */
+        .reminders-section {
+            background: linear-gradient(to bottom, #1a3a1a, #0d1a0d);
+            border: 4px solid #000;
+            box-shadow: inset -4px -6px #0006, inset 3px 3px #44ff4433;
+            padding: 1.5rem;
+            height: fit-content;
+        }
+
+        .reminder-item {
+            background: linear-gradient(to bottom, #0d1a0d, #050a05);
+            border: 2px solid #1a4a1a;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .reminder-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .reminder-text {
+            color: #CCC;
+            font-family: 'mc7', monospace;
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .reminder-time {
+            color: #88dd88;
+            font-family: 'mc7', monospace;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Submit Form */
+        .submit-form {
+            max-width: 600px;
         }
 
         .form-group {
-            width: 100%;
+            margin-bottom: 1.5rem;
         }
 
         .form-label {
             display: block;
-            color: #DDD;
+            color: #88dd88;
             font-family: 'mc7', monospace;
-            font-size: 0.9rem;
-            margin-bottom: 0.3rem;
-            text-shadow: 2px 2px #000A;
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
         }
 
-        .form-input {
+        .form-input,
+        .form-textarea {
             width: 100%;
-            padding: 0.6rem 0.8rem;
-            border: 2px solid #000;
-            background: #333 url('resources/bgbtn.png') center / cover;
-            image-rendering: pixelated;
-            color: #ffff;
-            font-family: 'mc7', monospace;
+            padding: 0.75rem 1rem;
+            background: #1a1a1a;
+            border: 3px solid #333;
+            color: #DDD;
+            font-family: mcten, monospace;
             font-size: 1rem;
-            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
-            cursor: url('resources/crosshair-32.png') 16 16, text;
+            box-shadow: inset 2px 2px #0008;
         }
 
-        .form-input:focus {
+        .form-input:focus,
+        .form-textarea:focus {
             outline: none;
-            border-color: #FFFFA0;
-            background-color: rgba(100, 100, 255, 0.2);
+            border-color: #44ff44;
         }
 
-        .form-input::placeholder {
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-hint {
             color: #888;
-        }
-
-        .mc-button {
-            --btn-size: clamp(24pt, 4vw, 34pt);
-            height: calc(var(--btn-size) * 1.1);
-            width: 100%;
-            padding: 0;
-            border: 2px solid #000;
-            background: #999 url('resources/bgbtn.png') center / cover;
-            image-rendering: pixelated;
-            overflow: hidden;
-            white-space: nowrap;
-            -webkit-user-select: none;
-            user-select: none;
-            margin-top: 0.5rem;
-            cursor: url('resources/crosshair-32.png') 16 16, pointer;
             font-family: 'mc7', monospace;
-            font-size: clamp(16px, 2.2vw, 22px);
-            color: #DDD;
-            touch-action: manipulation;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
         }
 
-        .mc-button .title {
-            width: 100%;
-            height: 100%;
-            padding-bottom: 0.3em;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-shadow: 2px 2px #000A;
-            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
-        }
-
-        .mc-button:hover .title,
-        .mc-button:focus .title {
-            background-color: rgba(100, 100, 255, 0.45);
-            text-shadow: 2px 2px #202013CC;
-            color: #FFFFA0;
-            border: 3px solid #FFFFA0;
-            box-sizing: border-box;
-        }
-
-        .mc-button:active .title {
-            box-shadow: inset -2px -4px #0004, inset 2px 2px #FFF5;
-            background-color: rgba(100, 100, 255, 0.6);
-        }
-
-        .error-message {
-            color: #ff6b6b;
+        /* Alert Message */
+        .alert {
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            border: 3px solid #000;
             font-family: 'mc7', monospace;
-            font-size: 0.85rem;
-            text-shadow: 2px 2px #000A;
-            margin-top: 0.5rem;
             display: none;
         }
 
-        .back-link {
-            margin-top: 1.5rem;
-            color: #AAA;
-            font-family: 'mc7', monospace;
-            font-size: 0.8rem;
+        .alert.show {
+            display: block;
+            animation: slideDown 0.3s ease;
         }
 
-        .back-link a {
-            color: #66aaff;
+        .alert.success {
+            background: rgba(68, 255, 68, 0.2);
+            border-color: #44ff44;
+            color: #44ff44;
+        }
+
+        .alert.error {
+            background: rgba(255, 68, 68, 0.2);
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 768px) {
-            .container {
-                width: 95%;
-                max-width: 400px;
-                padding: 1.5rem 1.25rem;
+            .sidebar {
+                width: 200px;
             }
 
-            .logo {
-                width: 85%;
-                max-width: 250px;
-            }
-
-            .atlas-title {
-                font-size: 1.3rem;
-                margin: 0.5rem 0 1.25rem 0;
-            }
-
-            .form-label {
-                font-size: 0.85rem;
-            }
-
-            .form-input {
-                padding: 0.5rem 0.7rem;
-                font-size: 0.95rem;
-            }
-
-            .mc-button {
-                --btn-size: 26pt;
-                font-size: 18px;
-            }
-
-            .back-link {
-                margin-top: 1.25rem;
-                font-size: 0.75rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            html, body {
-                font-size: 16px;
-            }
-
-            .holder {
+            .main-content {
+                margin-left: 200px;
                 padding: 1rem;
-                padding-top: calc(1rem + env(safe-area-inset-top, 0px));
-                padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
             }
 
-            .container {
-                width: 100%;
-                max-width: none;
-                padding: 1.25rem 1rem;
-                padding-left: calc(1rem + env(safe-area-inset-left, 0px));
-                padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+            .page-title {
+                font-size: 1.5rem;
             }
 
-            .logo {
-                width: 80%;
-                max-width: 220px;
-                margin-bottom: 0.25rem;
-            }
-
-            .atlas-title {
-                font-size: 1.2rem;
-                margin: 0.4rem 0 1rem 0;
-            }
-
-            .login-form {
-                gap: 0.85rem;
-            }
-
-            .form-label {
-                font-size: 0.8rem;
-                margin-bottom: 0.25rem;
-            }
-
-            .form-input {
-                padding: 0.55rem 0.65rem;
-                font-size: 16px; 
-            }
-
-            .mc-button {
-                --btn-size: 24pt;
-                min-height: 48px;
-                font-size: 16px;
-                margin-top: 0.4rem;
-            }
-
-            .error-message {
-                font-size: 0.75rem;
-            }
-
-            .back-link {
-                margin-top: 1rem;
-                font-size: 0.7rem;
+            .courses-grid {
+                grid-template-columns: 1fr;
             }
         }
 
-        @media (max-width: 360px) {
-            .container {
-                padding: 1rem 0.75rem;
-            }
-
-            .logo {
-                width: 75%;
-                max-width: 180px;
-            }
-
-            .atlas-title {
-                font-size: 1.1rem;
-            }
-
-            .form-input {
-                padding: 0.5rem 0.6rem;
-            }
+        /* Hidden Views */
+        .view-section {
+            display: none;
         }
 
-        @media (max-height: 500px) and (orientation: landscape) {
-            .holder {
-                min-height: auto;
-                padding: 0.5rem;
-            }
-
-            .container {
-                padding: 1rem 1.5rem;
-                max-width: 500px;
-            }
-
-            .logo {
-                max-width: 150px;
-                margin-bottom: 0.25rem;
-            }
-
-            .atlas-title {
-                font-size: 1rem;
-                margin: 0.25rem 0 0.75rem 0;
-            }
-
-            .login-form {
-                gap: 0.5rem;
-            }
-
-            .form-input {
-                padding: 0.4rem 0.6rem;
-            }
-
-            .mc-button {
-                --btn-size: 20pt;
-                min-height: 40px;
-                margin-top: 0.25rem;
-            }
-
-            .back-link {
-                margin-top: 0.75rem;
-            }
+        .view-section.active {
+            display: block;
         }
     </style>
 </head>
 <body>
-    <video class="bg-video" autoplay muted loop playsinline>
-        <source src="resources/mc.mp4" type="video/mp4">
-    </video>
-    
-    <div class="holder">
-        <div class="container">
-            <img src="resources/blueprint.png" alt="Blueprint Logo" class="logo">
-            <h1 class="atlas-title">Welcome to Atlas</h1>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-logo">ATLAS</h1>
+                <p class="sidebar-subtitle">Student Portal</p>
+            </div>
+            <nav>
+                <ul class="sidebar-nav">
+                    <li class="sidebar-nav-item">
+                        <a href="#" class="sidebar-nav-link active" data-view="dashboard">
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="#" class="sidebar-nav-link" data-view="courses">
+                            <span>Courses</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="#" class="sidebar-nav-link" data-view="chat">
+                            <span>Chat</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="#" class="sidebar-nav-link" data-view="submit">
+                            <span>Submit Project</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
             
-            <form class="login-form" id="loginForm">
-                
-            </form>
-            
-            <p class="back-link">
-                <a href="/">← Back to Home</a>
-            </p>
-        </div>
+            <!-- User Profile -->
+            <div class="user-profile">
+                <div class="user-profile-card">
+                    <h3 class="user-name">Regi J.C</h3>
+                    <p class="user-team">Team: Rock Stars</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Alert -->
+            <div id="alert" class="alert"></div>
+
+            <!-- Dashboard View -->
+            <div id="dashboard-view" class="view-section active">
+                <div class="content-header">
+                    <h2 class="page-title">Dashboard</h2>
+                    <button class="notification-bell" onclick="showAlert('No new notifications', 'success')">Notifications (0)</button>
+                </div>
+
+                <div class="dashboard-layout">
+                    <!-- Main Section - Courses -->
+                    <div>
+                        <div class="courses-section">
+                            <h3 class="section-title">My Courses</h3>
+                            <div class="courses-grid" id="courses-container">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Side Section - Reminders -->
+                    <div>
+                        <div class="reminders-section">
+                            <h3 class="section-title">Reminders</h3>
+                            <div id="reminders-container">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Courses View -->
+            <div id="courses-view" class="view-section">
+                <div class="content-header">
+                    <h2 class="page-title">All Courses</h2>
+                </div>
+
+                <div class="courses-section">
+                    <h3 class="section-title">Available Courses</h3>
+                    <div class="courses-grid" id="all-courses-container">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat View -->
+            <div id="chat-view" class="view-section">
+                <div class="content-header">
+                    <h2 class="page-title">Chat</h2>
+                </div>
+
+                <div style="background: linear-gradient(to bottom, #1a3a1a, #0d1a0d); border: 4px solid #000; box-shadow: inset -4px -6px #0006, inset 3px 3px #44ff4433; padding: 2rem; text-align: center;">
+                    <p style="color: #888; font-family: 'mc7', monospace; font-size: 1rem;">Chat feature coming soon...</p>
+                </div>
+            </div>
+
+            <!-- Submit Project View -->
+            <div id="submit-view" class="view-section">
+                <div class="content-header">
+                    <h2 class="page-title">Submit Project</h2>
+                </div>
+
+                <form class="submit-form" id="project-form">
+                    <div class="form-group">
+                        <label class="form-label" for="project-name">Project Name</label>
+                        <input type="text" id="project-name" class="form-input" placeholder="Enter your project name..." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="github-repo">GitHub Repository</label>
+                        <input type="url" id="github-repo" class="form-input" placeholder="https://github.com/username/repo..." required>
+                        <p class="form-hint">Enter the full URL to your GitHub repository</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="pitch-deck">Pitch Deck Link (Google Drive/Canva)</label>
+                        <input type="url" id="pitch-deck" class="form-input" placeholder="https://docs.google.com/presentation/..." required>
+                        <p class="form-hint">Make sure the link is shareable (Anyone with link can view)</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="description">Project Description</label>
+                        <textarea id="description" class="form-textarea" placeholder="Describe your project..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="mc-button primary">SUBMIT PROJECT</button>
+                </form>
+            </div>
+        </main>
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorMsg = document.getElementById('errorMsg');
-            
-            try {
-                const response = await fetch('/atlas-login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    window.location.href = '/atlas/dashboard';
-                } else {
-                    errorMsg.style.display = 'block';
-                    errorMsg.textContent = data.message || 'Invalid email or password';
+        // Mock Data
+        const mockData = {
+            courses: [
+                {
+                    id: 1,
+                    title: "Beginner C",
+                    description: "Learn the fundamentals of C programming language.",
+                    unlocked: true
+                },
+                {
+                    id: 2,
+                    title: "Advanced Algorithms",
+                    description: "Master complex algorithms and data structures.",
+                    unlocked: false
+                },
+                {
+                    id: 3,
+                    title: "Web Development",
+                    description: "Build modern web applications with HTML, CSS, and JavaScript.",
+                    unlocked: false
                 }
-            } catch (error) {
-                errorMsg.style.display = 'block';
-                errorMsg.textContent = 'An error occurred. Please try again.';
-            }
+            ],
+            reminders: [
+                {
+                    id: 1,
+                    text: "Snack Break",
+                    time: "11:15 AM"
+                },
+                {
+                    id: 2,
+                    text: "Project Submission Deadline",
+                    time: "5:00 PM"
+                }
+            ]
+        };
+
+        // Navigation
+        document.querySelectorAll('.sidebar-nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const view = link.dataset.view;
+                
+                // Update active link
+                document.querySelectorAll('.sidebar-nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                
+                // Show corresponding view
+                document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+                document.getElementById(`${view}-view`).classList.add('active');
+            });
         });
+
+        // Render Courses
+        function renderCourses(containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = mockData.courses.map(course => `
+                <div class="course-card ${course.unlocked ? '' : 'locked'}">
+                    <h4 class="course-title">${course.title}</h4>
+                    <p class="course-description">${course.description}</p>
+                    <button class="mc-button ${course.unlocked ? 'primary' : ''}" 
+                            ${course.unlocked ? '' : 'disabled'}
+                            onclick="${course.unlocked ? `viewCourse(${course.id})` : ''}">
+                        ${course.unlocked ? 'View Course' : 'Locked'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // View Course
+        function viewCourse(courseId) {
+            const course = mockData.courses.find(c => c.id === courseId);
+            showAlert(`Opening course: ${course.title}`, 'success');
+        }
+
+        // Render Reminders
+        function renderReminders() {
+            const container = document.getElementById('reminders-container');
+            container.innerHTML = mockData.reminders.map(reminder => `
+                <div class="reminder-item">
+                    <p class="reminder-text">${reminder.text}</p>
+                    <p class="reminder-time">${reminder.time}</p>
+                </div>
+            `).join('');
+        }
+
+        // Handle Project Submission
+        document.getElementById('project-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const projectName = document.getElementById('project-name').value;
+            const githubRepo = document.getElementById('github-repo').value;
+            const pitchDeck = document.getElementById('pitch-deck').value;
+            const description = document.getElementById('description').value;
+
+            // Validate
+            if (!projectName || !githubRepo || !pitchDeck || !description) {
+                showAlert('Please fill in all fields!', 'error');
+                return;
+            }
+
+            // Success
+            showAlert('Project submitted successfully!', 'success');
+            
+            // Reset form
+            document.getElementById('project-form').reset();
+        });
+
+        // Show Alert
+        function showAlert(message, type = 'success') {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert ${type} show`;
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 3000);
+        }
+
+        // Initialize
+        renderCourses('courses-container');
+        renderCourses('all-courses-container');
+        renderReminders();
     </script>
 </body>
 </html>
