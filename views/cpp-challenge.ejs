@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <title>Challenge | Arduino & ESP32 Simulator</title>
+    <!-- CodeMirror -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+    <style>
+        @font-face { font-family: mcten; src: url('resources/mc10.woff2') format('woff2'); }
+        @font-face { font-family: mc7;   src: url('resources/mc7.woff2')  format('woff2'); }
+        *, *::before, *::after { box-sizing: border-box; }
+        body, html {
+            margin:0; padding:0; height:100%;
+            overflow:hidden;
+            font-family: mcten, monospace;
+            font-size: clamp(14px, 2vw, 18px);
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
+            line-height:1.4; background:#0a0a0a; color:#DDD;
+        }
+        a { color:#66aaff; text-decoration:none; }
+        a:hover { color:#FFFFA0; }
+
+        /* ── NAVBAR ─────────────────────────────────── */
+        .navbar {
+            position:fixed; top:0; left:0; right:0; height:52px;
+            background:linear-gradient(to bottom,#1a1a1ae8,#0a0a0aee);
+            border-bottom:2px solid #333;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2, 0 2px 12px #0008;
+            display:flex; justify-content:space-between; align-items:center;
+            padding:0 1rem; z-index:100;
+        }
+        .nav-brand { display:flex; align-items:center; gap:.6rem; }
+        .nav-logo { height:32px; image-rendering:pixelated; }
+        .nav-title {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1rem;
+            text-shadow:2px 2px #000A;
+            max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+        }
+        .nav-right { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+        .timer-display {
+            color:#ff9944; font-family:'mc7',monospace; font-size:.85rem;
+            text-shadow:2px 2px #000A; padding:0 .4rem;
+        }
+        .mc-btn {
+            padding:.35rem .7rem;
+            border:2px solid #444;
+            background:#3a3a3a url('resources/bgbtn.png') center/cover;
+            image-rendering:pixelated;
+            color:#DDD; font-family:'mc7',monospace; font-size:.7rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF5;
+            transition:all .15s;
+            text-decoration:none;
+            display:inline-flex; align-items:center; gap:.3rem;
+        }
+        .mc-btn:hover { color:#FFFFA0; border-color:#FFFFA0; transform:translateY(-1px); box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF5, 0 2px 8px #FFFFA033; }
+        .mc-btn:active { transform:translateY(1px); }
+        .mc-btn.run   { color:#66ff66; border-color:#2a5a2a; }
+        .mc-btn.run:hover { border-color:#66ff66; box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF5, 0 2px 8px #66ff6633; }
+        .mc-btn.submit { color:#66aaff; border-color:#2a4a6a; }
+        .mc-btn.submit:hover { border-color:#66aaff; box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF5, 0 2px 8px #66aaff33; }
+        .mc-btn.hint   { color:#ff9944; border-color:#5a3a1a; }
+        .mc-btn.hint:hover { border-color:#ff9944; }
+        .mc-btn.solution { color:#ff6666; border-color:#5a2a2a; }
+        .mc-btn.solution:hover { border-color:#ff6666; }
+
+        /* ── MAIN LAYOUT ──────────────────────────────── */
+        .workspace { display:flex; margin-top:52px; height:calc(100vh - 52px); }
+
+        /* ── LEFT PANEL: PROBLEM ──────────────────────── */
+        .panel-left {
+            width:38%; min-width:300px; max-width:520px;
+            background:linear-gradient(180deg,#0e0e0ef0,#080808f0);
+            border-right:2px solid #2a2a2a;
+            display:flex; flex-direction:column; overflow:hidden;
+        }
+        .panel-tabs {
+            display:flex; border-bottom:2px solid #2a2a2a; flex-shrink:0;
+            background:#111;
+        }
+        .ptab {
+            flex:1; padding:.55rem .3rem; text-align:center;
+            background:transparent; border:none;
+            color:#777; font-family:'mc7',monospace; font-size:.65rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            border-bottom:3px solid transparent;
+            transition:all .2s;
+        }
+        .ptab:hover { color:#CCC; background:#1a1a1a; }
+        .ptab.active { color:#FFFFA0; border-bottom-color:#FFFFA0; background:#1a1a1a; }
+        .panel-body { flex:1; overflow-y:auto; padding:1rem 1.2rem; }
+        .panel-body::-webkit-scrollbar { width:6px; }
+        .panel-body::-webkit-scrollbar-track { background:#111; }
+        .panel-body::-webkit-scrollbar-thumb { background:#444; border-radius:3px; }
+        .panel-body::-webkit-scrollbar-thumb:hover { background:#666; }
+        .panel-section { display:none; }
+        .panel-section.active { display:block; }
+
+        /* Problem styles */
+        .prob-title {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1.1rem;
+            text-shadow:2px 2px #000A; margin:0 0 .4rem 0;
+        }
+        .prob-meta {
+            color:#888; font-family:'mc7',monospace; font-size:.6rem;
+            margin-bottom:1rem; display:flex; gap:.6rem; flex-wrap:wrap;
+        }
+        .prob-meta span {
+            display:inline-flex; align-items:center; gap:.2rem;
+            background:#1a1a1a; padding:.2rem .5rem; border:1px solid #2a2a2a;
+            border-radius:2px;
+        }
+        .prob-label {
+            color:#66aaff; font-family:'mc7',monospace; font-size:.7rem;
+            margin:1.2rem 0 .4rem 0; text-transform:uppercase;
+            letter-spacing:.05em;
+        }
+        .prob-text { color:#CCC; font-size:.85rem; line-height:1.7; }
+        .prob-text code {
+            background:#1a1a1a; padding:.15rem .4rem; border-radius:3px; border:1px solid #333;
+            font-family:'JetBrains Mono',monospace; color:#66aaff; font-size:.8rem;
+        }
+        .sample-box {
+            background:#111; border:1px solid #2a2a2a; padding:.7rem .8rem;
+            font-family:'JetBrains Mono',monospace; font-size:.8rem; color:#DDD;
+            white-space:pre-wrap; margin-top:.3rem; border-radius:3px;
+        }
+        .constraints-box {
+            background:#1a1200; border:1px solid #443300; padding:.7rem .8rem;
+            font-family:'JetBrains Mono',monospace; font-size:.8rem; color:#ffcc66;
+            border-radius:3px;
+        }
+        .hint-item {
+            background:#0a1a0a; border:1px solid #224422; padding:.7rem .8rem;
+            margin-bottom:.5rem; color:#88cc88; font-size:.85rem;
+            border-radius:3px;
+        }
+        .hint-hidden { filter:blur(6px); user-select:none; cursor:pointer; transition:filter .3s; }
+        .hint-hidden:hover { filter:blur(3px); }
+        .hint-revealed { filter:none; }
+        .hint-cost { color:#ff9944; font-family:'mc7',monospace; font-size:.6rem; }
+        .mistake-item {
+            color:#ff8888; font-size:.85rem; margin-bottom:.4rem;
+            padding-left:1rem; position:relative;
+        }
+        .mistake-item::before { content:'⚠ '; position:absolute; left:0; }
+        .solution-box {
+            background:#111; border:1px solid #333; padding:.8rem;
+            font-family:'JetBrains Mono',monospace; font-size:.75rem; color:#DDD;
+            white-space:pre-wrap; overflow-x:auto; border-radius:3px;
+            display:none;
+        }
+        .solution-box.visible { display:block; }
+
+        /* ── LESSON TAB ───────────────────────────────── */
+        .lesson-section h3 {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.85rem;
+            margin:1.2rem 0 .5rem 0; text-shadow:1px 1px #000A;
+        }
+        .lesson-section h3:first-child { margin-top:0; }
+        .lesson-section p, .lesson-section .lesson-text {
+            color:#CCC; font-size:.85rem; line-height:1.7; margin:.3rem 0 .8rem 0;
+        }
+        .lesson-code {
+            background:#111; border:1px solid #2a2a2a; border-left:3px solid #66aaff;
+            padding:.7rem .8rem; font-family:'JetBrains Mono',monospace;
+            font-size:.78rem; color:#DDD; white-space:pre-wrap;
+            overflow-x:auto; margin:.3rem 0 1rem 0; border-radius:0 3px 3px 0;
+        }
+        .lesson-tip {
+            background:#1a1200; border:1px solid #554400; border-left:3px solid #ffcc44;
+            padding:.7rem .8rem; color:#ffcc66; font-size:.85rem;
+            margin-top:1rem; border-radius:0 3px 3px 0;
+        }
+        .lesson-tip::before { content:'💡 Pro Tip: '; font-family:'mc7',monospace; font-size:.7rem; }
+        .lesson-intro {
+            color:#AAA; font-size:.9rem; font-style:italic; margin-bottom:1.2rem;
+            padding-bottom:.8rem; border-bottom:1px solid #2a2a2a;
+        }
+
+        /* ── RIGHT PANEL: EDITOR ──────────────────────── */
+        .panel-right { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+        .editor-header {
+            display:flex; justify-content:space-between; align-items:center;
+            padding:.45rem .8rem;
+            background:linear-gradient(180deg,#151515,#111);
+            border-bottom:2px solid #2a2a2a;
+            flex-shrink:0;
+        }
+        .editor-mode-label {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.7rem;
+        }
+        .editor-actions { display:flex; gap:.4rem; align-items:center; }
+
+        /* EduKits banner */
+        .edukits-banner {
+            background:linear-gradient(135deg,#1a0a2a,#0a1a2a);
+            border-bottom:2px solid #4433aa;
+            padding:.6rem 1rem;
+            display:none; align-items:center; gap:.8rem;
+            flex-shrink:0;
+        }
+        .edukits-banner.visible { display:flex; }
+        .edukits-icon { font-size:1.4rem; }
+        .edukits-text { flex:1; }
+        .edukits-text .ek-title {
+            color:#bb88ff; font-family:'mc7',monospace; font-size:.7rem;
+            margin-bottom:.2rem;
+        }
+        .edukits-text .ek-desc {
+            color:#999; font-size:.75rem; line-height:1.4;
+        }
+        .edukits-link {
+            padding:.4rem .8rem;
+            background:linear-gradient(135deg,#6633cc,#4422aa);
+            border:2px solid #7744dd;
+            color:#FFF; font-family:'mc7',monospace; font-size:.65rem;
+            text-decoration:none; white-space:nowrap;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            transition:all .2s;
+            display:inline-flex; align-items:center; gap:.3rem;
+        }
+        .edukits-link:hover { background:linear-gradient(135deg,#7744dd,#5533bb); border-color:#9966ff; color:#FFF; transform:translateY(-1px); }
+        .edukits-paste-btn {
+            padding:.35rem .6rem;
+            background:#2a2a2a; border:1px solid #555;
+            color:#bb88ff; font-family:'mc7',monospace; font-size:.6rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            transition:all .2s;
+        }
+        .edukits-paste-btn:hover { background:#3a3a3a; border-color:#bb88ff; }
+
+        /* CodeMirror */
+        .editor-wrap { flex:1; overflow:hidden; position:relative; }
+        .CodeMirror {
+            height:100% !important;
+            font-family:'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+            font-size:14px;
+        }
+
+        /* ── OUTPUT PANEL ─────────────────────────────── */
+        .output-panel {
+            height:200px; min-height:100px; max-height:300px;
+            border-top:2px solid #2a2a2a;
+            display:flex; flex-direction:column;
+            background:#0a0a0a; flex-shrink:0;
+        }
+        .output-tabs {
+            display:flex; border-bottom:1px solid #222; flex-shrink:0;
+            background:#111;
+        }
+        .otab {
+            padding:.45rem .8rem; background:transparent; border:none;
+            color:#777; font-family:'mc7',monospace; font-size:.6rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            border-bottom:3px solid transparent; transition:all .2s;
+        }
+        .otab:hover { color:#DDD; }
+        .otab.active { color:#FFFFA0; border-bottom-color:#FFFFA0; }
+        .output-body { flex:1; overflow-y:auto; padding:.6rem .8rem; }
+        .output-body::-webkit-scrollbar { width:6px; }
+        .output-body::-webkit-scrollbar-track { background:#0a0a0a; }
+        .output-body::-webkit-scrollbar-thumb { background:#444; border-radius:3px; }
+        .output-section { display:none; }
+        .output-section.active { display:block; }
+        .console-output {
+            font-family:'JetBrains Mono',monospace; font-size:.8rem; color:#DDD;
+            white-space:pre-wrap;
+        }
+        .console-error { color:#ff6666; }
+        .console-success { color:#66ff66; }
+
+        /* Test case results */
+        .tc-result {
+            display:flex; align-items:flex-start; gap:.6rem;
+            padding:.6rem; margin-bottom:.4rem;
+            border:1px solid #222; background:#111; border-radius:3px;
+        }
+        .tc-result.pass { border-color:#44cc44; background:#0a1a0a; }
+        .tc-result.fail { border-color:#cc4444; background:#1a0a0a; }
+        .tc-icon { font-size:1.2rem; flex-shrink:0; }
+        .tc-info { flex:1; }
+        .tc-name { font-family:'mc7',monospace; font-size:.7rem; color:#DDD; }
+        .tc-detail { font-family:monospace; font-size:.7rem; color:#AAA; margin-top:.2rem; }
+        .tc-diff { font-family:monospace; font-size:.7rem; margin-top:.2rem; }
+        .tc-expected { color:#66ff66; }
+        .tc-actual   { color:#ff6666; }
+
+        /* ── LOADING OVERLAY ──────────────────────────── */
+        .loading-overlay {
+            display:none; position:fixed; inset:0; z-index:500;
+            background:rgba(0,0,0,.88);
+            justify-content:center; align-items:center;
+            flex-direction:column; gap:1rem;
+        }
+        .loading-overlay.active { display:flex; }
+        .loading-text {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1.2rem;
+            text-shadow:2px 2px #000A;
+        }
+        .loading-spinner {
+            width:40px; height:40px;
+            border:4px solid #333; border-top-color:#FFFFA0;
+            border-radius:50%; animation:spin .8s linear infinite;
+        }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* ── SCORE MODAL ──────────────────────────────── */
+        .score-modal {
+            display:none; position:fixed; inset:0; z-index:600;
+            background:rgba(0,0,0,.92);
+            justify-content:center; align-items:center;
+        }
+        .score-modal.active { display:flex; }
+        .score-card {
+            background:linear-gradient(180deg,#141414f0,#0a0a0af0);
+            border:2px solid #FFFFA0;
+            box-shadow:0 0 40px #FFFFA033, 0 0 80px #FFFFA011, inset -2px -4px #0006, inset 2px 2px #FFF2;
+            padding:2rem 2.5rem; max-width:420px; width:90%; text-align:center;
+            border-radius:4px;
+        }
+        .score-header {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1.3rem;
+            text-shadow:2px 2px #000A; margin-bottom:1rem;
+        }
+        .score-big {
+            font-family:'mc7',monospace; font-size:3.5rem;
+            text-shadow:3px 3px #000A; margin:.5rem 0;
+        }
+        .score-big.pass { color:#66ff66; text-shadow:3px 3px #000A, 0 0 20px #66ff6633; }
+        .score-big.fail { color:#ff6666; text-shadow:3px 3px #000A, 0 0 20px #ff666633; }
+        .score-detail {
+            color:#AAA; font-family:mcten,monospace; font-size:.8rem;
+            margin:.3rem 0;
+        }
+        .score-xp {
+            color:#66ff66; font-family:'mc7',monospace; font-size:1.1rem;
+            margin-top:.8rem; text-shadow:2px 2px #000A;
+        }
+        .score-badges {
+            display:flex; flex-wrap:wrap; gap:.4rem;
+            justify-content:center; margin-top:.8rem;
+        }
+        .score-badge-item {
+            background:#1a1a1a; border:1px solid #444; padding:.25rem .6rem;
+            font-family:'mc7',monospace; font-size:.6rem; color:#FFFFA0;
+            border-radius:2px;
+        }
+        .score-actions { margin-top:1.5rem; display:flex; gap:.8rem; justify-content:center; }
+
+        /* ── CUSTOM INPUT ─────────────────────────────── */
+        .custom-input-area {
+            width:100%; min-height:60px; max-height:100px;
+            background:#111; border:1px solid #333; color:#DDD;
+            font-family:'JetBrains Mono',monospace; font-size:.8rem; padding:.5rem;
+            resize:vertical; border-radius:3px;
+        }
+        .custom-input-label {
+            color:#888; font-family:'mc7',monospace; font-size:.6rem;
+            margin-bottom:.3rem;
+        }
+
+        /* ── KEYBOARD SHORTCUT HINTS ──────────────────── */
+        .shortcuts-bar {
+            display:flex; gap:1rem; padding:.3rem .8rem;
+            background:#0d0d0d; border-top:1px solid #1a1a1a;
+            flex-shrink:0;
+        }
+        .shortcut-hint {
+            color:#555; font-family:'mc7',monospace; font-size:.5rem;
+        }
+        .shortcut-hint kbd {
+            background:#1a1a1a; border:1px solid #333; padding:.1rem .3rem;
+            color:#888; border-radius:2px; font-size:.5rem;
+        }
+
+        /* ── RESPONSIVE ───────────────────────────────── */
+        @media (max-width:900px) {
+            .workspace { flex-direction:column; }
+            .panel-left { width:100%; max-width:none; min-width:0; height:40%; border-right:none; border-bottom:2px solid #2a2a2a; }
+            .panel-right { height:60%; }
+            .nav-right { gap:.3rem; }
+            .mc-btn { padding:.25rem .5rem; font-size:.6rem; }
+        }
+        @media (max-width:600px) {
+            .nav-title { font-size:.75rem; max-width:140px; }
+            .timer-display { font-size:.7rem; }
+            .edukits-banner { flex-direction:column; text-align:center; }
+        }
+    </style>
+    <link rel="icon" type="image/png" href="resources/logo.png">
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Compiling...</div>
+    </div>
+
+    <!-- Score modal -->
+    <div class="score-modal" id="scoreModal">
+        <div class="score-card">
+            <div class="score-header" id="scoreHeader">CHALLENGE COMPLETE!</div>
+            <div class="score-big" id="scoreBig">85</div>
+            <div class="score-detail" id="scoreTests">Tests Passed: 4/4</div>
+            <div class="score-detail" id="scoreTime">Time: 2m 30s</div>
+            <div class="score-detail" id="scoreAttempts">Attempts: 1</div>
+            <div class="score-xp" id="scoreXp">+50 XP</div>
+            <div class="score-badges" id="scoreBadges"></div>
+            <div class="score-actions">
+                <button class="mc-btn" onclick="closeScoreModal()">CLOSE</button>
+                <a class="mc-btn" id="nextChallengeBtn" href="#">NEXT →</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <a href="/cpp-simulator"><img src="resources/logo.png" alt="" class="nav-logo"></a>
+            <span class="nav-title" id="challengeTitle">Challenge</span>
+        </div>
+        <div class="nav-right">
+            <span class="timer-display" id="timerDisplay">⏱ 00:00</span>
+            <button class="mc-btn hint" id="hintBtn" onclick="useHint()">💡 HINT</button>
+            <button class="mc-btn run" onclick="runCode()">▶ RUN</button>
+            <button class="mc-btn submit" onclick="submitCode()">📤 SUBMIT</button>
+            <button class="mc-btn solution" onclick="toggleSolution()">🔑 SOLUTION</button>
+            <a class="mc-btn" href="/cpp-simulator">← BACK</a>
+        </div>
+    </nav>
+
+    <!-- Workspace -->
+    <div class="workspace">
+        <!-- Left: Problem Description + Lesson -->
+        <div class="panel-left">
+            <div class="panel-tabs">
+                <button class="ptab" onclick="showPanelTab('lesson')">📖 LESSON</button>
+                <button class="ptab active" onclick="showPanelTab('desc')">📋 PROBLEM</button>
+                <button class="ptab" onclick="showPanelTab('hints')">💡 HINTS</button>
+                <button class="ptab" onclick="showPanelTab('testcases')">🧪 TESTS</button>
+                <button class="ptab" onclick="showPanelTab('reference')">📚 REF</button>
+            </div>
+            <div class="panel-body">
+                <!-- Lesson -->
+                <div class="panel-section" id="sec-lesson">
+                    <h2 class="prob-title" id="lessonTitle">Lesson</h2>
+                    <div class="lesson-intro" id="lessonIntro"></div>
+                    <div class="lesson-section" id="lessonContent"></div>
+                </div>
+                <!-- Description -->
+                <div class="panel-section active" id="sec-desc">
+                    <h2 class="prob-title" id="probTitle"></h2>
+                    <div class="prob-meta" id="probMeta"></div>
+                    <div class="prob-label">Description</div>
+                    <div class="prob-text" id="probDesc"></div>
+                    <div class="prob-label">Input Format</div>
+                    <div class="prob-text" id="probInput"></div>
+                    <div class="prob-label">Output Format</div>
+                    <div class="prob-text" id="probOutput"></div>
+                    <div class="prob-label">Sample Input</div>
+                    <div class="sample-box" id="probSampleIn"></div>
+                    <div class="prob-label">Sample Output</div>
+                    <div class="sample-box" id="probSampleOut"></div>
+                    <div class="prob-label">Constraints</div>
+                    <div class="constraints-box" id="probConstraints"></div>
+                </div>
+                <!-- Hints -->
+                <div class="panel-section" id="sec-hints">
+                    <div class="prob-label">Hints <span class="hint-cost">(−5 points each)</span></div>
+                    <div id="hintsContainer"></div>
+                </div>
+                <!-- Test Cases -->
+                <div class="panel-section" id="sec-testcases">
+                    <div class="prob-label">Test Cases</div>
+                    <div id="testCasesPreview"></div>
+                </div>
+                <!-- Reference -->
+                <div class="panel-section" id="sec-reference">
+                    <div class="prob-label">Common Mistakes</div>
+                    <div id="mistakesContainer"></div>
+                    <div class="prob-label">Edge Cases to Consider</div>
+                    <div id="edgeCasesContainer"></div>
+                    <div class="prob-label">Solution <span style="color:#ff6666;font-size:.55rem;">(−30 points penalty)</span></div>
+                    <button class="mc-btn solution" onclick="toggleSolution()" style="margin-bottom:.5rem;">REVEAL SOLUTION</button>
+                    <div class="solution-box" id="solutionBox"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Editor + Output -->
+        <div class="panel-right">
+            <div class="editor-header">
+                <span class="editor-mode-label" id="editorModeLabel">⌨️ ADVANCED MODE</span>
+                <div class="editor-actions">
+                    <button class="mc-btn" onclick="resetCode()">↻ RESET</button>
+                </div>
+            </div>
+
+            <!-- EduKits banner (beginner mode) -->
+            <div class="edukits-banner" id="edukitsBanner">
+                <span class="edukits-icon">🧱</span>
+                <div class="edukits-text">
+                    <div class="ek-title">BLOCK CODING MODE</div>
+                    <div class="ek-desc">Build your Arduino solution with drag-and-drop blocks in EduKits, then copy the generated C++ code and paste it into the editor below.</div>
+                </div>
+                <a class="edukits-link" href="https://edukits.co/code/#/d/draft/editor" target="_blank" rel="noopener">🧱 OPEN EDUKITS</a>
+                <button class="edukits-paste-btn" onclick="pasteFromClipboard()">📋 PASTE CODE</button>
+            </div>
+
+            <!-- CodeMirror editor (always shown) -->
+            <div class="editor-wrap" id="editorWrap">
+                <textarea id="codeEditor"></textarea>
+            </div>
+
+            <!-- Output panel -->
+            <div class="output-panel">
+                <div class="output-tabs">
+                    <button class="otab active" onclick="showOutputTab('console')">CONSOLE</button>
+                    <button class="otab" onclick="showOutputTab('results')">TEST RESULTS</button>
+                    <button class="otab" onclick="showOutputTab('input')">CUSTOM INPUT</button>
+                </div>
+                <div class="output-body">
+                    <div class="output-section active" id="out-console">
+                        <div class="console-output" id="consoleOutput">Run your code to see output here...</div>
+                    </div>
+                    <div class="output-section" id="out-results">
+                        <div id="testResults">Submit your code to see test results...</div>
+                    </div>
+                    <div class="output-section" id="out-input">
+                        <div class="custom-input-label">Custom stdin input:</div>
+                        <textarea class="custom-input-area" id="customInput" placeholder="Enter custom input here..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Keyboard shortcuts -->
+            <div class="shortcuts-bar">
+                <span class="shortcut-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run</span>
+                <span class="shortcut-hint"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> Submit</span>
+                <span class="shortcut-hint"><kbd>Esc</kbd> Close modal</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="cpp-data.js"></script>
+    <script>
+    (() => {
+        // ═══════════════════════════════════════════════════
+        // INITIALIZATION
+        // ═══════════════════════════════════════════════════
+        const DATA = window.CPP_SIM;
+        const LS_KEY = 'cpp_sim_progress';
+        const params = new URLSearchParams(window.location.search);
+        const challengeId = params.get('id');
+        const mode = params.get('mode') || 'advanced';
+
+        const challenge = DATA.challenges.find(c => c.id === challengeId);
+        if (!challenge) {
+            document.body.innerHTML = '<div style="padding:2rem;color:#ff6666;font-family:mc7,monospace;text-align:center;margin-top:20vh;"><h2>Challenge not found</h2><a href="/cpp-simulator" class="mc-btn" style="margin-top:1rem;display:inline-block;">← Back to Hub</a></div>';
+            return;
+        }
+        const level = DATA.levels.find(l => l.id === challenge.level);
+
+        // State
+        function getState() {
+            const raw = localStorage.getItem(LS_KEY);
+            return raw ? JSON.parse(raw) : { mode:'beginner', xp:0, solved:{}, achievements:[], streak:{ count:0, lastDate:null } };
+        }
+        function saveState(s) { localStorage.setItem(LS_KEY, JSON.stringify(s)); }
+        let gameState = getState();
+
+        // Session tracking
+        let sessionData = { attempts:0, hintsUsed:0, startTime:Date.now(), solutionViewed:false };
+
+        // ═══════════════════════════════════════════════════
+        // TIMER
+        // ═══════════════════════════════════════════════════
+        const timerEl = document.getElementById('timerDisplay');
+        setInterval(() => {
+            const elapsed = Math.floor((Date.now() - sessionData.startTime) / 1000);
+            const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+            const s = String(elapsed % 60).padStart(2, '0');
+            timerEl.textContent = `⏱ ${m}:${s}`;
+        }, 1000);
+
+        // ═══════════════════════════════════════════════════
+        // POPULATE LESSON CONTENT
+        // ═══════════════════════════════════════════════════
+        const lesson = DATA.lessons[challenge.level];
+        if (lesson) {
+            document.getElementById('lessonTitle').textContent = lesson.title;
+            document.getElementById('lessonIntro').textContent = lesson.intro;
+            const lessonContent = document.getElementById('lessonContent');
+            let html = '';
+            lesson.sections.forEach(sec => {
+                html += `<h3>${sec.heading}</h3>`;
+                html += `<div class="lesson-text">${sec.text}</div>`;
+                if (sec.code) {
+                    html += `<div class="lesson-code">${escapeHtml(sec.code)}</div>`;
+                }
+            });
+            if (lesson.tip) {
+                html += `<div class="lesson-tip">${lesson.tip}</div>`;
+            }
+            lessonContent.innerHTML = html;
+        }
+
+        // ═══════════════════════════════════════════════════
+        // POPULATE PROBLEM DESCRIPTION
+        // ═══════════════════════════════════════════════════
+        document.getElementById('challengeTitle').textContent = challenge.title;
+        document.getElementById('probTitle').textContent = challenge.title;
+        document.getElementById('probMeta').innerHTML = `
+            <span>📊 ${challenge.difficulty}</span>
+            <span>📚 ${challenge.topic}</span>
+            <span>🏷️ Level ${challenge.level}</span>
+            <span>⭐ +${DATA.config.xpPerLevel[challenge.level]} XP</span>
+        `;
+        document.getElementById('probDesc').innerHTML = challenge.description;
+        document.getElementById('probInput').innerHTML = challenge.inputFormat;
+        document.getElementById('probOutput').innerHTML = challenge.outputFormat;
+        document.getElementById('probSampleIn').textContent = challenge.sampleInput || '(no input)';
+        document.getElementById('probSampleOut').textContent = challenge.sampleOutput;
+        document.getElementById('probConstraints').textContent = challenge.constraints;
+        document.getElementById('solutionBox').textContent = challenge.solution;
+
+        // Custom input default
+        document.getElementById('customInput').value = challenge.sampleInput;
+
+        // Hints
+        const hintsContainer = document.getElementById('hintsContainer');
+        challenge.hints.forEach((hint, i) => {
+            const div = document.createElement('div');
+            div.className = 'hint-item hint-hidden';
+            div.innerHTML = hint;
+            div.setAttribute('data-index', i);
+            div.addEventListener('click', function() {
+                if (this.classList.contains('hint-hidden')) {
+                    this.classList.remove('hint-hidden');
+                    this.classList.add('hint-revealed');
+                    sessionData.hintsUsed++;
+                    document.getElementById('hintBtn').textContent = `💡 HINT (${sessionData.hintsUsed})`;
+                }
+            });
+            hintsContainer.appendChild(div);
+        });
+
+        // Test cases preview
+        const tcPreview = document.getElementById('testCasesPreview');
+        challenge.testCases.forEach((tc, i) => {
+            tcPreview.innerHTML += `
+                <div style="margin-bottom:1rem;">
+                    <div style="color:#FFFFA0;font-family:mc7,monospace;font-size:.7rem;margin-bottom:.3rem;">Test Case ${i + 1}: ${tc.desc}</div>
+                    <div style="color:#888;font-size:.7rem;">Input:</div>
+                    <div class="sample-box" style="font-size:.75rem;">${tc.input || '(no input)'}</div>
+                    <div style="color:#888;font-size:.7rem;margin-top:.3rem;">Expected Output:</div>
+                    <div class="sample-box" style="font-size:.75rem;">${tc.expectedOutput}</div>
+                </div>
+            `;
+        });
+
+        // Common mistakes
+        const mistakesC = document.getElementById('mistakesContainer');
+        challenge.commonMistakes.forEach(m => {
+            mistakesC.innerHTML += `<div class="mistake-item">${m}</div>`;
+        });
+        const edgeCasesC = document.getElementById('edgeCasesContainer');
+        challenge.edgeCases.forEach(e => {
+            edgeCasesC.innerHTML += `<div style="color:#AAA;font-size:.85rem;margin-bottom:.3rem;">• ${e}</div>`;
+        });
+
+        // ═══════════════════════════════════════════════════
+        // MODE SETUP
+        // ═══════════════════════════════════════════════════
+        if (mode === 'beginner') {
+            document.getElementById('editorModeLabel').textContent = '🧱 BEGINNER MODE — EduKits Block Coding';
+            document.getElementById('edukitsBanner').classList.add('visible');
+        } else {
+            document.getElementById('editorModeLabel').textContent = '⌨️ ADVANCED MODE';
+        }
+
+        // ═══════════════════════════════════════════════════
+        // CODE EDITOR (CodeMirror — always active)
+        // ═══════════════════════════════════════════════════
+        const cmEditor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+            mode: 'text/x-c++src',
+            theme: 'monokai',
+            lineNumbers: true,
+            indentUnit: 4,
+            tabSize: 4,
+            indentWithTabs: false,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            lineWrapping: true,
+            extraKeys: { 'Tab': function(cm) { cm.replaceSelection('    ', 'end'); } }
+        });
+        cmEditor.setValue(challenge.starterCode);
+
+        function getCode() {
+            return cmEditor ? cmEditor.getValue() : '';
+        }
+
+        // ═══════════════════════════════════════════════════
+        // EDUKITS PASTE INTEGRATION
+        // ═══════════════════════════════════════════════════
+        window.pasteFromClipboard = async function() {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text && text.trim()) {
+                    cmEditor.setValue(text);
+                    showConsole('Code pasted from clipboard!', 'success');
+                } else {
+                    showConsole('Clipboard is empty. Copy your Arduino C++ code from EduKits first.', 'error');
+                }
+            } catch(err) {
+                // Fallback: focus the editor and let user paste manually
+                showConsole('Could not read clipboard. Use Ctrl+V to paste your code into the editor.', 'error');
+                cmEditor.focus();
+            }
+        };
+
+        // ═══════════════════════════════════════════════════
+        // PANEL TABS
+        // ═══════════════════════════════════════════════════
+        window.showPanelTab = function(tab) {
+            document.querySelectorAll('.ptab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel-section').forEach(s => s.classList.remove('active'));
+            document.querySelector(`.ptab[onclick*="${tab}"]`).classList.add('active');
+            document.getElementById('sec-' + tab).classList.add('active');
+        };
+        window.showOutputTab = function(tab) {
+            document.querySelectorAll('.otab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.output-section').forEach(s => s.classList.remove('active'));
+            document.querySelector(`.otab[onclick*="${tab}"]`).classList.add('active');
+            document.getElementById('out-' + tab).classList.add('active');
+        };
+
+        // ═══════════════════════════════════════════════════
+        // HINT SYSTEM
+        // ═══════════════════════════════════════════════════
+        window.useHint = function() {
+            showPanelTab('hints');
+            const hints = document.querySelectorAll('.hint-item.hint-hidden');
+            if (hints.length > 0) {
+                hints[0].classList.remove('hint-hidden');
+                hints[0].classList.add('hint-revealed');
+                sessionData.hintsUsed++;
+                document.getElementById('hintBtn').textContent = `💡 HINT (${sessionData.hintsUsed})`;
+            }
+        };
+
+        // ═══════════════════════════════════════════════════
+        // SOLUTION TOGGLE
+        // ═══════════════════════════════════════════════════
+        window.toggleSolution = function() {
+            const box = document.getElementById('solutionBox');
+            if (!box.classList.contains('visible')) {
+                if (!sessionData.solutionViewed) {
+                    if (!confirm('Viewing the solution costs 30 points. Continue?')) return;
+                    sessionData.solutionViewed = true;
+                }
+            }
+            box.classList.toggle('visible');
+        };
+
+        // ═══════════════════════════════════════════════════
+        // RESET CODE
+        // ═══════════════════════════════════════════════════
+        window.resetCode = function() {
+            if (confirm('Reset code to starter template?')) {
+                cmEditor.setValue(challenge.starterCode);
+            }
+        };
+
+        // ═══════════════════════════════════════════════════
+        // CODE EXECUTION (via Piston API proxy)
+        // ═══════════════════════════════════════════════════
+        async function executeCode(code, stdin = '') {
+            const response = await fetch('/api/execute-code', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code, input: stdin })
+            });
+            if (!response.ok) throw new Error('Execution service unavailable');
+            return await response.json();
+        }
+
+        // ═══════════════════════════════════════════════════
+        // RUN CODE
+        // ═══════════════════════════════════════════════════
+        window.runCode = function() {
+            const code = getCode();
+            if (!code.trim()) {
+                showConsole('Write some code first!', 'error');
+                return;
+            }
+            const input = document.getElementById('customInput').value;
+            showOutputTab('console');
+            showLoading('Running...');
+
+            executeCode(code, input).then(result => {
+                hideLoading();
+                if (result.compile && result.compile.stderr) {
+                    showConsole('COMPILATION ERROR:\n' + result.compile.stderr, 'error');
+                } else if (result.run) {
+                    let output = result.run.stdout || '';
+                    if (result.run.stderr) output += '\n[stderr] ' + result.run.stderr;
+                    if (result.run.code !== 0) output += '\n[Exit code: ' + result.run.code + ']';
+                    showConsole(output || '(no output)', result.run.code === 0 ? 'success' : 'error');
+                } else {
+                    showConsole('Unexpected response from execution service.', 'error');
+                }
+            }).catch(err => {
+                hideLoading();
+                showConsole('Error: ' + err.message + '\n\nMake sure the server is running.', 'error');
+            });
+        };
+
+        // ═══════════════════════════════════════════════════
+        // SUBMIT CODE (run all test cases)
+        // ═══════════════════════════════════════════════════
+        window.submitCode = async function() {
+            const code = getCode();
+            if (!code.trim()) {
+                showConsole('Write some code first!', 'error');
+                return;
+            }
+            sessionData.attempts++;
+            showLoading('Testing... (0/' + challenge.testCases.length + ')');
+            showOutputTab('results');
+
+            const results = [];
+            let passed = 0;
+
+            for (let i = 0; i < challenge.testCases.length; i++) {
+                const tc = challenge.testCases[i];
+                document.getElementById('loadingText').textContent =
+                    `Testing... (${i + 1}/${challenge.testCases.length})`;
+
+                try {
+                    const result = await executeCode(code, tc.input);
+
+                    if (result.compile && result.compile.stderr) {
+                        results.push({
+                            pass: false, desc: tc.desc,
+                            expected: tc.expectedOutput,
+                            actual: 'COMPILATION ERROR:\n' + result.compile.stderr,
+                            error: true
+                        });
+                    } else if (result.run) {
+                        const actual = (result.run.stdout || '').trim();
+                        const expected = tc.expectedOutput.trim();
+                        const isPass = normalizeOutput(actual) === normalizeOutput(expected);
+                        if (isPass) passed++;
+                        results.push({
+                            pass: isPass, desc: tc.desc,
+                            expected, actual,
+                            time: result.run.time || null
+                        });
+                    } else {
+                        results.push({
+                            pass: false, desc: tc.desc,
+                            expected: tc.expectedOutput, actual: 'No output',
+                            error: true
+                        });
+                    }
+                } catch (err) {
+                    results.push({
+                        pass: false, desc: tc.desc,
+                        expected: tc.expectedOutput,
+                        actual: 'Execution failed: ' + err.message,
+                        error: true
+                    });
+                }
+            }
+
+            hideLoading();
+            renderTestResults(results, passed);
+
+            const elapsed = Math.floor((Date.now() - sessionData.startTime) / 1000);
+            const score = calculateScore(passed, challenge.testCases.length, elapsed, sessionData);
+            showScoreModal(score, passed, challenge.testCases.length, elapsed);
+
+            // Save progress if all passed
+            if (passed === challenge.testCases.length) {
+                const existing = gameState.solved[challengeId];
+                if (!existing || score.total > existing.score) {
+                    gameState.solved[challengeId] = {
+                        score: score.total,
+                        attempts: sessionData.attempts,
+                        hints: sessionData.hintsUsed,
+                        time: elapsed,
+                        mode: mode
+                    };
+                    if (!existing) {
+                        gameState.xp += DATA.config.xpPerLevel[challenge.level];
+                    }
+                    const today = new Date().toISOString().slice(0, 10);
+                    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+                    if (gameState.streak.lastDate === yesterday) {
+                        gameState.streak.count++;
+                    } else if (gameState.streak.lastDate !== today) {
+                        gameState.streak.count = 1;
+                    }
+                    gameState.streak.lastDate = today;
+
+                    checkAndEarnAchievements();
+                    saveState(gameState);
+                }
+            }
+        };
+
+        // ═══════════════════════════════════════════════════
+        // OUTPUT HELPERS
+        // ═══════════════════════════════════════════════════
+        function normalizeOutput(str) {
+            return str.split('\n').map(l => l.trimEnd()).join('\n').trim();
+        }
+
+        function showConsole(text, type = '') {
+            const el = document.getElementById('consoleOutput');
+            el.textContent = text;
+            el.className = 'console-output' + (type === 'error' ? ' console-error' : type === 'success' ? ' console-success' : '');
+        }
+
+        function renderTestResults(results, passed) {
+            const container = document.getElementById('testResults');
+            container.innerHTML = `<div style="margin-bottom:.8rem;color:${passed === results.length ? '#66ff66' : '#ff6666'};font-family:mc7,monospace;font-size:.85rem;">
+                ${passed === results.length ? '✅ ALL TESTS PASSED' : `❌ ${passed}/${results.length} TESTS PASSED`}
+            </div>`;
+            results.forEach((r, i) => {
+                container.innerHTML += `
+                    <div class="tc-result ${r.pass ? 'pass' : 'fail'}">
+                        <span class="tc-icon">${r.pass ? '✅' : '❌'}</span>
+                        <div class="tc-info">
+                            <div class="tc-name">Test ${i + 1}: ${r.desc}</div>
+                            ${!r.pass ? `
+                                <div class="tc-diff">
+                                    <div class="tc-expected">Expected: ${escapeHtml(r.expected)}</div>
+                                    <div class="tc-actual">Actual: ${escapeHtml(r.actual)}</div>
+                                </div>
+                            ` : '<div class="tc-detail" style="color:#66ff66;">Passed!</div>'}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function showLoading(text) {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        // ═══════════════════════════════════════════════════
+        // SCORING ALGORITHM
+        // ═══════════════════════════════════════════════════
+        function calculateScore(passed, total, elapsedSeconds, session) {
+            const cfg = DATA.config;
+            const base = cfg.baseScore;
+
+            const correctness = (passed / total) * base * cfg.weights.correctness;
+            const efficiency = (passed / total) * base * cfg.weights.efficiency;
+            const structure = (passed === total) ? base * cfg.weights.structure : (passed / total) * base * cfg.weights.structure * 0.5;
+
+            let timeMultiplier = 0.5;
+            for (const t of cfg.timeBonusThresholds) {
+                if (elapsedSeconds <= t.seconds) { timeMultiplier = t.multiplier; break; }
+            }
+            const timeBonus = base * cfg.weights.time * timeMultiplier;
+
+            let total_score = correctness + efficiency + structure + timeBonus;
+
+            const bonuses = [];
+            if (session.attempts === 1 && passed === total) {
+                total_score += cfg.bonuses.firstAttempt;
+                bonuses.push('First Attempt! +' + cfg.bonuses.firstAttempt);
+            }
+            if (session.hintsUsed === 0 && passed === total) {
+                total_score += cfg.bonuses.noHints;
+                bonuses.push('No Hints! +' + cfg.bonuses.noHints);
+            }
+            if (passed === total) {
+                total_score += cfg.bonuses.allEdgeCases;
+                bonuses.push('All Cases! +' + cfg.bonuses.allEdgeCases);
+            }
+
+            if (session.hintsUsed > 0) {
+                total_score -= session.hintsUsed * cfg.penalties.hintUsed;
+            }
+            if (session.attempts > cfg.penalties.failThreshold) {
+                total_score -= (session.attempts - cfg.penalties.failThreshold) * cfg.penalties.failedAttempt;
+            }
+            if (session.solutionViewed) {
+                total_score -= 30;
+            }
+
+            total_score = Math.max(0, Math.round(total_score));
+
+            return { total: total_score, passed, total_tests: total, bonuses, correctness: Math.round(correctness), efficiency: Math.round(efficiency) };
+        }
+
+        // ═══════════════════════════════════════════════════
+        // SCORE MODAL
+        // ═══════════════════════════════════════════════════
+        function showScoreModal(score, passed, total, elapsed) {
+            const allPassed = passed === total;
+            const m = Math.floor(elapsed / 60);
+            const s = elapsed % 60;
+
+            document.getElementById('scoreHeader').textContent = allPassed ? '🎉 CHALLENGE COMPLETE!' : '❌ NOT QUITE...';
+            const bigEl = document.getElementById('scoreBig');
+            bigEl.textContent = score.total;
+            bigEl.className = 'score-big ' + (allPassed ? 'pass' : 'fail');
+            document.getElementById('scoreTests').textContent = `Tests Passed: ${passed}/${total}`;
+            document.getElementById('scoreTime').textContent = `Time: ${m}m ${s}s`;
+            document.getElementById('scoreAttempts').textContent = `Attempts: ${sessionData.attempts} | Hints: ${sessionData.hintsUsed}`;
+
+            if (allPassed) {
+                document.getElementById('scoreXp').textContent = `+${DATA.config.xpPerLevel[challenge.level]} XP`;
+                document.getElementById('scoreXp').style.display = 'block';
+            } else {
+                document.getElementById('scoreXp').style.display = 'none';
+            }
+
+            const badgesEl = document.getElementById('scoreBadges');
+            badgesEl.innerHTML = '';
+            score.bonuses.forEach(b => {
+                badgesEl.innerHTML += `<span class="score-badge-item">${b}</span>`;
+            });
+
+            // Next challenge
+            const allChallenges = DATA.challenges.filter(c => c.level === challenge.level);
+            const currentIndex = allChallenges.findIndex(c => c.id === challengeId);
+            let nextChallenge = allChallenges[currentIndex + 1];
+            if (!nextChallenge) {
+                const nextLevelChallenges = DATA.challenges.filter(c => c.level === challenge.level + 1);
+                if (nextLevelChallenges.length > 0) nextChallenge = nextLevelChallenges[0];
+            }
+            const nextBtn = document.getElementById('nextChallengeBtn');
+            if (nextChallenge && allPassed) {
+                nextBtn.href = `/cpp-challenge?id=${nextChallenge.id}&mode=${mode}`;
+                nextBtn.style.display = 'inline-flex';
+                nextBtn.textContent = 'NEXT →';
+            } else if (!allPassed) {
+                nextBtn.style.display = 'inline-flex';
+                nextBtn.href = '#';
+                nextBtn.textContent = 'TRY AGAIN';
+                nextBtn.onclick = (e) => { e.preventDefault(); closeScoreModal(); };
+            } else {
+                nextBtn.href = '/cpp-simulator';
+                nextBtn.textContent = 'BACK TO HUB';
+            }
+
+            document.getElementById('scoreModal').classList.add('active');
+        }
+
+        window.closeScoreModal = function() {
+            document.getElementById('scoreModal').classList.remove('active');
+        };
+
+        // ═══════════════════════════════════════════════════
+        // ACHIEVEMENTS
+        // ═══════════════════════════════════════════════════
+        function checkAndEarnAchievements() {
+            const solved = Object.keys(gameState.solved).length;
+            const earn = (id) => { if (!gameState.achievements.includes(id)) gameState.achievements.push(id); };
+
+            if (solved >= 1) earn('first_solve');
+            if (solved >= 10) earn('ten_solves');
+            if (Object.values(gameState.solved).some(s => s.score >= 100)) earn('perfect_score');
+            if (gameState.streak.count >= 3) earn('streak_3');
+            if (gameState.streak.count >= 7) earn('streak_7');
+
+            const allLvl3 = DATA.challenges.filter(c => c.level === 3).every(c => gameState.solved[c.id]);
+            const allLvl6 = DATA.challenges.filter(c => c.level === 6).every(c => gameState.solved[c.id]);
+            const allLvl7 = DATA.challenges.filter(c => c.level === 7).every(c => gameState.solved[c.id]);
+            if (allLvl3) earn('loop_master');
+            if (allLvl6) earn('pointer_pro');
+            if (allLvl7) earn('oop_wizard');
+
+            for (const lvl of DATA.levels) {
+                const lChallenges = DATA.challenges.filter(c => c.level === lvl.id);
+                if (lChallenges.every(c => gameState.solved[c.id])) { earn('level_clear'); break; }
+            }
+
+            if (Object.values(gameState.solved).some(s => s.time && s.time < 60)) earn('speed_demon');
+            if (Object.values(gameState.solved).filter(s => s.hints === 0).length >= 5) earn('no_hints_5');
+            if (Object.values(gameState.solved).filter(s => s.mode === 'beginner').length >= 3) earn('block_builder');
+            if (gameState.solved['l10c1']) earn('final_boss');
+            if (solved === DATA.challenges.length) earn('grand_master');
+        }
+
+        // ═══════════════════════════════════════════════════
+        // KEYBOARD SHORTCUTS
+        // ═══════════════════════════════════════════════════
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Enter') {
+                e.preventDefault();
+                submitCode();
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                runCode();
+            }
+            if (e.key === 'Escape') {
+                closeScoreModal();
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
