@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <title>Atlas Admin | Blueprint</title>
+    <style>
+        @font-face { font-family: mcten; src: url('/resources/mc10.woff2') format('woff2'); }
+        @font-face { font-family: mc7; src: url('/resources/mc7.woff2') format('woff2'); }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            font-family: mcten, monospace;
+            background: radial-gradient(ellipse at top, #111321 0%, #040408 55%, #000000 100%);
+            color: #DDD;
+            cursor: url('/resources/crosshair-32.png') 16 16, crosshair;
+        }
+
+        a, button { cursor: url('/resources/crosshair-32.png') 16 16, crosshair; }
+
+        .page {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.2rem;
+        }
+
+        .topbar,
+        .card {
+            border: 4px solid #000;
+            background: linear-gradient(145deg, rgba(20, 20, 30, 0.82), rgba(0, 0, 0, 0.8));
+            box-shadow: inset -3px -6px rgba(0, 0, 0, 0.45), inset 3px 3px rgba(255, 255, 255, 0.06);
+        }
+
+        .topbar {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .brand img {
+            width: 68px;
+            height: 68px;
+            border-radius: 999px;
+            border: 3px solid #000;
+            object-fit: cover;
+        }
+
+        .title {
+            margin: 0;
+            font-family: 'mc7', monospace;
+            color: #FFFFA0;
+            text-shadow: 2px 2px #000A;
+            font-size: clamp(20px, 2.8vw, 32px);
+            letter-spacing: 0.08em;
+        }
+
+        .subtitle {
+            margin: 0.2rem 0 0;
+            font-family: 'mc7', monospace;
+            color: #90EE90;
+            font-size: clamp(13px, 1.7vw, 16px);
+        }
+
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            border: 2px solid #000;
+            background: #999 url('/resources/bgbtn.png') center / cover;
+            color: #DDD;
+            font-family: 'mc7', monospace;
+            text-shadow: 2px 2px #000A;
+            text-decoration: none;
+            padding: 0.65rem 0.95rem;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+            min-height: 46px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.15s ease, filter 0.15s ease;
+        }
+
+        .btn:hover,
+        .btn:focus-visible {
+            border-color: #FFFFA0;
+            filter: brightness(1.08);
+            outline: none;
+        }
+
+        .btn-danger {
+            background-image: none;
+            background-color: rgba(160, 40, 40, 0.85);
+            color: #FFD2D2;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .card {
+            padding: 1rem;
+        }
+
+        .kpi-label {
+            margin: 0;
+            font-family: 'mc7', monospace;
+            color: #BBB;
+            font-size: 0.82rem;
+        }
+
+        .kpi-value {
+            margin: 0.35rem 0 0;
+            font-family: 'mc7', monospace;
+            color: #FFFFA0;
+            font-size: clamp(28px, 3.5vw, 42px);
+            text-shadow: 2px 2px #000A;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 0.9rem;
+        }
+
+        .section-title {
+            margin: 0 0 0.6rem;
+            font-family: 'mc7', monospace;
+            color: #FFFFA0;
+            text-shadow: 2px 2px #000A;
+            font-size: clamp(18px, 2.2vw, 24px);
+        }
+
+        .description {
+            margin: 0 0 0.9rem;
+            font-family: 'mc7', monospace;
+            color: #DDD;
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 900px) {
+            .summary {
+                grid-template-columns: 1fr;
+            }
+
+            .action-row,
+            .btn {
+                width: 100%;
+            }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            html, body, a, button { cursor: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="topbar">
+            <div class="brand">
+                <img src="/resources/logo.png" alt="GIIS Robotics Logo">
+                <div>
+                    <h1 class="title">ATLAS ADMIN</h1>
+                    <p class="subtitle"><%= user.email %></p>
+                </div>
+            </div>
+            <div class="action-row">
+                <a class="btn" href="/dashboard">Team Dashboard</a>
+                <a class="btn btn-danger" href="/logout">Logout</a>
+            </div>
+        </header>
+
+        <section class="summary">
+            <article class="card">
+                <p class="kpi-label">Total Teams</p>
+                <p class="kpi-value"><%= teamCount %></p>
+            </article>
+            <article class="card">
+                <p class="kpi-label">Course Articles</p>
+                <p class="kpi-value"><%= courseCount %></p>
+            </article>
+            <article class="card">
+                <p class="kpi-label">Submissions</p>
+                <p class="kpi-value"><%= submissionCount %></p>
+            </article>
+        </section>
+
+        <section class="grid">
+            <article class="card">
+                <h2 class="section-title">Teams</h2>
+                <p class="description">Create team credentials and email onboarding details.</p>
+                <a class="btn" href="/admin/teams">Open Teams</a>
+            </article>
+            <article class="card">
+                <h2 class="section-title">Courses</h2>
+                <p class="description">Build and publish course articles using rich HTML editing.</p>
+                <a class="btn" href="/admin/courses">Open Course Editor</a>
+            </article>
+            <article class="card">
+                <h2 class="section-title">Emails</h2>
+                <p class="description">Compose and send formatted updates to participants.</p>
+                <a class="btn" href="/admin/emails">Open Email Editor</a>
+            </article>
+            <article class="card">
+                <h2 class="section-title">Submissions</h2>
+                <p class="description">Review all submitted projects and resource links.</p>
+                <a class="btn" href="/admin/submissions">View Submissions</a>
+            </article>
+        </section>
+    </div>
+</body>
+</html>

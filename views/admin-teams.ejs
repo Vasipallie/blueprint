@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <title>Teams | Atlas Admin</title>
+    <style>
+        @font-face { font-family: mcten; src: url('/resources/mc10.woff2') format('woff2'); }
+        @font-face { font-family: mc7; src: url('/resources/mc7.woff2') format('woff2'); }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            font-family: mcten, monospace;
+            cursor: url('/resources/crosshair-32.png') 16 16, crosshair;
+            background: radial-gradient(ellipse at top, #111321 0%, #040408 55%, #000000 100%);
+            color: #DDD;
+        }
+
+        a, button, input, textarea { cursor: url('/resources/crosshair-32.png') 16 16, crosshair; }
+
+        .page {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .card {
+            border: 4px solid #000;
+            background: linear-gradient(145deg, rgba(20, 20, 30, 0.82), rgba(0, 0, 0, 0.82));
+            box-shadow: inset -3px -6px rgba(0, 0, 0, 0.45), inset 3px 3px rgba(255, 255, 255, 0.06);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+        }
+
+        .title {
+            margin: 0;
+            font-family: 'mc7', monospace;
+            color: #FFFFA0;
+            text-shadow: 2px 2px #000A;
+            font-size: clamp(20px, 2.8vw, 32px);
+        }
+
+        .subtitle {
+            margin: 0.2rem 0 0;
+            font-family: 'mc7', monospace;
+            color: #90EE90;
+            font-size: 0.82rem;
+        }
+
+        .btn {
+            border: 2px solid #000;
+            background: #999 url('/resources/bgbtn.png') center / cover;
+            color: #DDD;
+            text-decoration: none;
+            font-family: 'mc7', monospace;
+            text-shadow: 2px 2px #000A;
+            padding: 0.7rem 0.85rem;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
+            transition: border-color 0.15s ease, filter 0.15s ease;
+        }
+
+        .btn:hover,
+        .btn:focus-visible {
+            border-color: #FFFFA0;
+            filter: brightness(1.08);
+            outline: none;
+        }
+
+        .status {
+            border: 2px solid #000;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 0.7rem 0.8rem;
+            font-family: 'mc7', monospace;
+            font-size: 0.8rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .status.ok { color: #90EE90; }
+        .status.err { color: #ff8c8c; }
+
+        .label {
+            display: block;
+            margin-bottom: 0.35rem;
+            font-family: 'mc7', monospace;
+            font-size: 0.86rem;
+            color: #DDD;
+        }
+
+        .input,
+        .textarea {
+            width: 100%;
+            border: 2px solid #000;
+            background: #333 url('/resources/bgbtn.png') center / cover;
+            color: #FFF;
+            font-family: 'mc7', monospace;
+            padding: 0.65rem 0.75rem;
+            font-size: 0.88rem;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF3;
+            margin-bottom: 0.8rem;
+        }
+
+        .textarea { min-height: 100px; resize: vertical; }
+
+        .hint {
+            margin-top: -0.3rem;
+            margin-bottom: 0.8rem;
+            color: #AAA;
+            font-family: 'mc7', monospace;
+            font-size: 0.74rem;
+        }
+
+        @media (max-width: 820px) {
+            .page {
+                padding-left: calc(0.8rem + env(safe-area-inset-left, 0px));
+                padding-right: calc(0.8rem + env(safe-area-inset-right, 0px));
+                padding-top: calc(0.8rem + env(safe-area-inset-top, 0px));
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+            }
+
+            .btn { width: 100%; }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            html, body, a, button, input, textarea { cursor: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <section class="card top">
+            <div>
+                <h1 class="title">TEAM ACCOUNTS</h1>
+                <p class="subtitle"><%= user.email %></p>
+            </div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <a class="btn" href="/admin">← Back to Admin</a>
+                <a class="btn" href="/logout">Logout</a>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="status" id="createStatus">Creates teamname@giisrobotics.club with a random password, then emails credentials.</div>
+            <% if (!hasServiceRole) { %>
+                <div class="status err">SUPABASE_SERVICE_ROLE_KEY is missing. Account creation is disabled.</div>
+            <% } %>
+
+            <form method="POST" action="/admin/create-team">
+                <label class="label" for="teamName">Team Name</label>
+                <input class="input" id="teamName" name="teamName" placeholder="Team Phoenix" required>
+
+                <label class="label" for="recipients">Recipients (comma-separated emails)</label>
+                <textarea class="textarea" id="recipients" name="recipients" placeholder="member1@example.com, member2@example.com"></textarea>
+                <p class="hint">Credentials email uses GMAIL_USER and GMAIL_APP_PASSWORD.</p>
+
+                <button class="btn" type="submit" <%= hasServiceRole ? '' : 'disabled' %>>Create Team Account</button>
+            </form>
+        </section>
+    </div>
+
+    <script>
+        const query = new URLSearchParams(window.location.search);
+        const status = document.getElementById('createStatus');
+        const create = query.get('create');
+
+        if (create === 'success') {
+            status.classList.add('ok');
+            status.textContent = 'Team account created and credentials email sent.';
+        } else if (create === 'service-key-missing') {
+            status.classList.add('err');
+            status.textContent = 'SUPABASE_SERVICE_ROLE_KEY is required to create team accounts.';
+        } else if (create === 'missing-team') {
+            status.classList.add('err');
+            status.textContent = 'Team name is required.';
+        } else if (create === 'invalid-team') {
+            status.classList.add('err');
+            status.textContent = 'Team name is invalid for an email handle.';
+        } else if (create === 'error') {
+            status.classList.add('err');
+            status.textContent = 'Failed to create team account or send email.';
+        }
+    </script>
+</body>
+</html>
