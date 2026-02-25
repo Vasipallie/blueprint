@@ -3,6 +3,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import session from 'express-session';
+import cookieSession from 'cookie-session';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
@@ -23,22 +24,63 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+const isVercel = Boolean(process.env.VERCEL);
+const isProduction = process.env.NODE_ENV === 'production' || isVercel;
+
 app.set('view engine', 'ejs');
+
+if (isProduction) {
+    app.set('trust proxy', 1);
+}
+
 app.use(express.static(path.join(__dirname, 'views')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+const sessionSecret = process.env.SESSION_SECRET || 'blueprint-secret-key';
+
 // Session middleware
-app.use(session({
-    secret: process.env.SESSION_SECRET || 'blueprint-secret-key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: false,
+// - Vercel is serverless: in-memory/file session stores are not reliable.
+// - Use signed cookie sessions in that environment to prevent random logouts.
+if (isVercel || process.env.SESSION_STRATEGY === 'cookie') {
+    app.use(cookieSession({
+        name: 'atlas.sid',
+        keys: [sessionSecret],
+        maxAge: 1000 * 60 * 60 * 8,
         sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 8
+        secure: isProduction,
+        httpOnly: true
+    }));
+} else {
+    app.use(session({
+        secret: sessionSecret,
+        resave: false,
+        saveUninitialized: false,
+        proxy: isProduction,
+        cookie: {
+            secure: isProduction,
+            sameSite: 'lax',
+            maxAge: 1000 * 60 * 60 * 8,
+            httpOnly: true
+        }
+    }));
+}
+
+function saveSession(req, callback) {
+    if (typeof req.session?.save === 'function') {
+        return req.session.save(callback);
     }
-}));
+    callback(null);
+}
+
+function destroySession(req, callback) {
+    if (typeof req.session?.destroy === 'function') {
+        return req.session.destroy(callback);
+    }
+
+    req.session = null;
+    callback();
+}
 
 function requireLogin(req, res, next) {
     if (!req.session.user) {
@@ -233,11 +275,21 @@ app.post('/login', async (req, res) => {
 
         const isAdmin = await resolveAdminStatus(data.user);
 
-        req.session.user = data.user;
-        req.session.accessToken = data.session?.access_token || null;
+        // Keep cookie sessions small (serverless-friendly). Do not store the full Supabase user object.
+        req.session.user = {
+            id: data.user.id,
+            email: data.user.email,
+            user_metadata: data.user.user_metadata,
+            app_metadata: data.user.app_metadata
+        };
+
+        // Only store access tokens in server-side sessions.
+        if (typeof req.session?.save === 'function') {
+            req.session.accessToken = data.session?.access_token || null;
+        }
         req.session.isAdmin = isAdmin;
 
-        return req.session.save((saveError) => {
+        return saveSession(req, (saveError) => {
             if (saveError) {
                 console.error('Session save error:', saveError.message);
                 if (wantsJson(req)) {
@@ -264,8 +316,9 @@ app.post('/login', async (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
-    req.session.destroy(() => {
+    destroySession(req, () => {
         res.clearCookie('connect.sid');
+        res.clearCookie('atlas.sid');
         res.redirect('/atlas');
     });
 });
