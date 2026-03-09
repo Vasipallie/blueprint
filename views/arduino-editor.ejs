@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <title>Arduino IDE | Blueprint</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/monokai.min.css">
+    <style>
+        @font-face { font-family: mcten; src: url('resources/mc10.woff2') format('woff2'); }
+        @font-face { font-family: mc7;   src: url('resources/mc7.woff2')  format('woff2'); }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        body, html {
+            margin:0; padding:0; height:100%;
+            overflow:hidden;
+            font-family: mcten, monospace;
+            font-size: clamp(14px, 2vw, 18px);
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
+            line-height:1.4;
+            background:#0a0a0a;
+            color:#DDD;
+        }
+        a { color:#66aaff; text-decoration:none; cursor: url('resources/crosshair-32.png') 16 16, crosshair; }
+        a:hover { color:#FFFFA0; }
+        button, select, input { cursor: url('resources/crosshair-32.png') 16 16, crosshair; }
+
+        ::-webkit-scrollbar { width:8px; height:8px; }
+        ::-webkit-scrollbar-track { background:#0a0a0a; }
+        ::-webkit-scrollbar-thumb { background:#333; border-radius:4px; }
+        ::-webkit-scrollbar-thumb:hover { background:#555; }
+
+        .bg-video {
+            position:fixed; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            min-width:100%; min-height:100%;
+            width:auto; height:auto;
+            z-index:-1; object-fit:cover; opacity:0.12;
+        }
+
+        /* ── NAVBAR ───────────────────────────────────── */
+        .navbar {
+            position:fixed; top:0; left:0; right:0; height:50px;
+            background:linear-gradient(180deg,#1a1a1ae8,#0a0a0aee);
+            border-bottom:2px solid #333;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2, 0 4px 20px #0008;
+            display:flex; justify-content:space-between; align-items:center;
+            padding:0 1rem; z-index:100;
+        }
+        .nav-brand { display:flex; align-items:center; gap:.6rem; }
+        .nav-logo { height:30px; image-rendering:pixelated; }
+        .nav-title {
+            color:#FFFFA0; font-family:'mc7',monospace;
+            font-size:1rem; text-shadow:2px 2px #000A;
+            letter-spacing:.05em;
+        }
+        .nav-controls { display:flex; gap:.5rem; align-items:center; }
+        .nav-btn {
+            padding:.3rem .7rem;
+            border:2px solid #444;
+            background:#3a3a3a url('resources/bgbtn.png') center/cover;
+            image-rendering:pixelated;
+            color:#DDD; font-family:'mc7',monospace; font-size:.65rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF5;
+            text-decoration:none; transition:all .15s;
+        }
+        .nav-btn:hover {
+            color:#FFFFA0; border-color:#FFFFA0;
+            transform:translateY(-1px);
+        }
+        .nav-btn:active { transform:translateY(1px); }
+        .nav-btn.compile { border-color:#66aaff; color:#66aaff; }
+        .nav-btn.compile:hover { border-color:#99ccff; color:#99ccff; box-shadow:0 0 8px #66aaff33; }
+        .nav-btn.upload { border-color:#66ff66; color:#66ff66; }
+        .nav-btn.upload:hover { border-color:#99ff99; color:#99ff99; box-shadow:0 0 8px #66ff6633; }
+        .nav-btn.danger { background-image:none; background-color:rgba(160,40,40,0.85); color:#FFD2D2; }
+
+        /* ── SELECT ───────────────────────────────────── */
+        .mc-select {
+            padding:.3rem .5rem;
+            border:2px solid #444;
+            background:#1a1a1a; color:#DDD;
+            font-family:'mc7',monospace; font-size:.6rem;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2;
+            border-radius:2px; outline:none;
+        }
+        .mc-select:focus { border-color:#FFFFA0; }
+
+        /* ── IDE LAYOUT ───────────────────────────────── */
+        .ide-wrap {
+            position:fixed; top:50px; left:0; right:0; bottom:0;
+            display:grid;
+            grid-template-columns:1fr 380px;
+            grid-template-rows:1fr auto;
+        }
+
+        /* ── EDITOR PANEL ─────────────────────────────── */
+        .editor-panel {
+            grid-row:1/3; grid-column:1;
+            display:flex; flex-direction:column;
+            border-right:2px solid #333;
+            min-width:0;
+        }
+        .editor-toolbar {
+            display:flex; align-items:center; gap:.5rem;
+            padding:.4rem .6rem;
+            background:linear-gradient(180deg,#141414,#0e0e0e);
+            border-bottom:1px solid #2a2a2a;
+            flex-shrink:0;
+        }
+        .editor-toolbar label {
+            color:#777; font-family:'mc7',monospace; font-size:.55rem;
+            text-transform:uppercase; letter-spacing:.05em;
+        }
+        .file-name {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.7rem;
+            margin-left:auto;
+        }
+        .editor-container { flex:1; overflow:hidden; position:relative; }
+        .editor-container .CodeMirror {
+            height:100%; font-size:14px;
+            font-family:'JetBrains Mono','Fira Code',monospace;
+        }
+
+        /* ── RIGHT PANEL ──────────────────────────────── */
+        .right-panel {
+            grid-row:1/3; grid-column:2;
+            display:flex; flex-direction:column;
+            min-height:0;
+        }
+
+        /* ── SERIAL MONITOR ───────────────────────────── */
+        .serial-header {
+            display:flex; align-items:center; gap:.4rem;
+            padding:.4rem .6rem;
+            background:linear-gradient(180deg,#141414,#0e0e0e);
+            border-bottom:1px solid #2a2a2a;
+            flex-shrink:0;
+        }
+        .serial-header .title-text {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.7rem;
+            text-shadow:1px 1px #000A;
+        }
+        .serial-header .spacer { flex:1; }
+
+        .serial-status {
+            width:8px; height:8px; border-radius:50%;
+            background:#ff4444; border:1px solid #000;
+            transition:background .3s;
+        }
+        .serial-status.connected { background:#44ff44; box-shadow:0 0 6px #44ff44; }
+
+        .serial-output {
+            flex:1; overflow-y:auto;
+            background:#0a0a0a; padding:.5rem;
+            font-family:'JetBrains Mono',monospace; font-size:12px;
+            color:#0f0; white-space:pre-wrap; word-break:break-all;
+            min-height:0;
+            border-bottom:1px solid #2a2a2a;
+        }
+        .serial-output .rx { color:#0f0; }
+        .serial-output .tx { color:#66aaff; }
+        .serial-output .sys { color:#ff9944; font-style:italic; }
+        .serial-output .err { color:#ff4444; }
+
+        .serial-input-bar {
+            display:flex; gap:0; flex-shrink:0;
+            border-top:1px solid #2a2a2a;
+        }
+        .serial-input {
+            flex:1; border:none; background:#111; color:#DDD;
+            font-family:'JetBrains Mono',monospace; font-size:12px;
+            padding:.4rem .5rem; outline:none;
+        }
+        .serial-input::placeholder { color:#555; }
+        .serial-send-btn {
+            padding:.4rem .7rem; background:#1a1a1a; border:none;
+            border-left:1px solid #2a2a2a;
+            color:#66ff66; font-family:'mc7',monospace; font-size:.6rem;
+            cursor:pointer; transition:all .15s;
+        }
+        .serial-send-btn:hover { background:#2a2a2a; color:#99ff99; }
+
+        /* ── BOARD INFO PANEL ─────────────────────────── */
+        .board-info {
+            padding:.5rem .6rem;
+            background:linear-gradient(180deg,#141414,#0e0e0e);
+            border-top:1px solid #2a2a2a;
+            flex-shrink:0;
+        }
+        .board-info-row {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:.3rem;
+        }
+        .board-info-label {
+            color:#777; font-family:'mc7',monospace; font-size:.5rem;
+            text-transform:uppercase;
+        }
+        .board-info-value {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.55rem;
+        }
+
+        /* ── STATUS BAR (bottom) ──────────────────────── */
+        .status-bar {
+            position:fixed; bottom:0; left:0; right:0; height:24px;
+            background:linear-gradient(180deg,#1a1a1a,#0e0e0e);
+            border-top:1px solid #2a2a2a;
+            display:flex; align-items:center; justify-content:space-between;
+            padding:0 .8rem; z-index:100;
+        }
+        .status-text {
+            color:#888; font-family:'mc7',monospace; font-size:.5rem;
+        }
+        .status-text.ok { color:#66ff66; }
+        .status-text.err { color:#ff4444; }
+        .status-text.busy { color:#ffcc44; }
+
+        /* ── COMPILE OUTPUT DRAWER ────────────────────── */
+        .compile-output {
+            display:none; position:fixed; bottom:24px; left:0;
+            right:380px; max-height:200px; overflow-y:auto;
+            background:#0a0a0aee; border-top:2px solid #333;
+            padding:.5rem .8rem;
+            font-family:'JetBrains Mono',monospace; font-size:12px;
+            color:#DDD; white-space:pre-wrap; z-index:90;
+        }
+        .compile-output.active { display:block; }
+        .compile-output .co-err { color:#ff4444; }
+        .compile-output .co-warn { color:#ffcc44; }
+        .compile-output .co-ok { color:#66ff66; }
+        .compile-output .co-info { color:#66aaff; }
+
+        /* ── TEMPLATE MODAL ───────────────────────────── */
+        .modal-overlay {
+            display:none; position:fixed; inset:0; z-index:200;
+            background:rgba(0,0,0,.88);
+            justify-content:center; align-items:center;
+        }
+        .modal-overlay.active { display:flex; }
+        .modal-card {
+            background:linear-gradient(180deg,#141414,#0a0a0a);
+            border:2px solid #444; padding:1.5rem;
+            max-width:500px; width:90%; border-radius:6px;
+            max-height:80vh; overflow-y:auto;
+        }
+        .modal-card h2 {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1rem;
+            text-shadow:2px 2px #000A; margin:0 0 1rem;
+        }
+        .template-list { display:grid; gap:.5rem; }
+        .template-item {
+            padding:.6rem .8rem;
+            background:#1a1a1a; border:2px solid #2a2a2a;
+            border-radius:4px; cursor:pointer; transition:all .15s;
+        }
+        .template-item:hover {
+            border-color:#FFFFA0; transform:translateY(-1px);
+        }
+        .template-item .t-name {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.75rem;
+        }
+        .template-item .t-desc {
+            color:#AAA; font-size:.65rem; margin-top:.2rem;
+        }
+        .modal-close {
+            display:block; margin:1rem auto 0; padding:.3rem 1rem;
+            background:#2a2a2a; border:1px solid #555;
+            color:#DDD; font-family:'mc7',monospace; font-size:.65rem;
+            cursor:pointer; border-radius:3px;
+        }
+        .modal-close:hover { color:#FFFFA0; border-color:#FFFFA0; }
+
+        /* ── RESPONSIVE ───────────────────────────────── */
+        @media (max-width:900px) {
+            .ide-wrap {
+                grid-template-columns:1fr;
+                grid-template-rows:1fr 300px;
+            }
+            .editor-panel { grid-row:1; grid-column:1; border-right:none; border-bottom:2px solid #333; }
+            .right-panel { grid-row:2; grid-column:1; }
+            .compile-output { right:0; }
+        }
+        @media (hover: none) and (pointer: coarse) {
+            html, body, a, button, select, input { cursor: auto; }
+        }
+    </style>
+    <link rel="icon" type="image/png" href="resources/logo.png">
+</head>
+<body>
+    <video class="bg-video" autoplay muted loop playsinline>
+        <source src="https://7oaoepmc5nhfkhkk.public.blob.vercel-storage.com/bcgk.mp4" type="video/mp4">
+    </video>
+
+    <!-- Template Modal -->
+    <div class="modal-overlay" id="templateModal">
+        <div class="modal-card">
+            <h2>📋 Code Templates</h2>
+            <div class="template-list" id="templateList"></div>
+            <button class="modal-close" onclick="closeTemplateModal()">✕ CLOSE</button>
+        </div>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-brand">
+            <img src="resources/logo.png" alt="Blueprint" class="nav-logo">
+            <span class="nav-title">ARDUINO IDE</span>
+        </div>
+        <div class="nav-controls">
+            <select class="mc-select" id="boardSelect" title="Select Board">
+                <option value="arduino:avr:uno">Arduino Uno</option>
+                <option value="arduino:avr:nano">Arduino Nano</option>
+                <option value="arduino:avr:mega">Arduino Mega 2560</option>
+                <option value="esp32:esp32:esp32">ESP32 DevKit</option>
+                <option value="esp32:esp32:esp32s3">ESP32-S3</option>
+                <option value="esp8266:esp8266:nodemcu">NodeMCU ESP8266</option>
+            </select>
+            <button class="nav-btn" onclick="openTemplateModal()" title="Code Templates">📋 Templates</button>
+            <button class="nav-btn compile" onclick="compileCode()" id="compileBtn" title="Verify / Compile">✓ Verify</button>
+            <button class="nav-btn upload" onclick="uploadCode()" id="uploadBtn" title="Compile & Upload">⬆ Upload</button>
+            <button class="nav-btn" onclick="downloadSketch()" title="Download .ino file">💾 Save</button>
+            <a href="/" class="nav-btn">← Home</a>
+        </div>
+    </nav>
+
+    <div class="ide-wrap">
+        <!-- Editor Panel -->
+        <div class="editor-panel">
+            <div class="editor-toolbar">
+                <label>Board:</label>
+                <span id="boardLabel" style="color:#66aaff;font-family:'mc7',monospace;font-size:.6rem;">Arduino Uno</span>
+                <span class="file-name" id="fileName">sketch.ino</span>
+            </div>
+            <div class="editor-container">
+                <textarea id="codeEditor"></textarea>
+            </div>
+        </div>
+
+        <!-- Right Panel: Serial Monitor -->
+        <div class="right-panel">
+            <div class="serial-header">
+                <span class="title-text">📡 Serial Monitor</span>
+                <span class="spacer"></span>
+                <select class="mc-select" id="baudRate" style="width:auto;">
+                    <option value="9600" selected>9600</option>
+                    <option value="19200">19200</option>
+                    <option value="38400">38400</option>
+                    <option value="57600">57600</option>
+                    <option value="115200">115200</option>
+                    <option value="230400">230400</option>
+                    <option value="460800">460800</option>
+                    <option value="921600">921600</option>
+                </select>
+                <select class="mc-select" id="lineEnding" style="width:auto;">
+                    <option value="">No line ending</option>
+                    <option value="\n" selected>Newline</option>
+                    <option value="\r\n">CR+LF</option>
+                    <option value="\r">Carriage return</option>
+                </select>
+                <div class="serial-status" id="serialStatus" title="Disconnected"></div>
+                <button class="nav-btn" id="serialConnectBtn" onclick="toggleSerial()">Connect</button>
+                <button class="nav-btn" onclick="clearSerial()" title="Clear output">🗑</button>
+            </div>
+            <div class="serial-output" id="serialOutput">
+                <span class="sys">-- Serial Monitor Ready --\n</span>
+                <span class="sys">-- Click "Connect" to open a serial port --\n</span>
+            </div>
+            <div class="serial-input-bar">
+                <input class="serial-input" id="serialInput" placeholder="Send data..." onkeydown="if(event.key==='Enter')sendSerial()">
+                <button class="serial-send-btn" onclick="sendSerial()">SEND</button>
+            </div>
+            <div class="board-info">
+                <div class="board-info-row">
+                    <span class="board-info-label">Port</span>
+                    <span class="board-info-value" id="portInfo">Not connected</span>
+                </div>
+                <div class="board-info-row">
+                    <span class="board-info-label">Board</span>
+                    <span class="board-info-value" id="boardInfo">Arduino Uno</span>
+                </div>
+                <div class="board-info-row">
+                    <span class="board-info-label">Status</span>
+                    <span class="board-info-value" id="connectionStatus">Idle</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Compile Output Drawer -->
+    <div class="compile-output" id="compileOutput"></div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+        <span class="status-text" id="statusLeft">Ready</span>
+        <span class="status-text" id="statusRight">Blueprint Arduino IDE v1.0</span>
+    </div>
+
+    <!-- CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/comment/comment.min.js"></script>
+
+    <script>
+    (() => {
+        // ─── CODE TEMPLATES ────────────────────────────
+        const TEMPLATES = [
+            {
+                name: 'Blink LED',
+                desc: 'Classic blink sketch for built-in LED',
+                board: 'arduino',
+                code: `// Blink LED - Arduino
+// Blinks the built-in LED on and off every second
+
+void setup() {
+    pinMode(LED_BUILTIN, OUTPUT);
+    Serial.begin(9600);
+    Serial.println("Blink sketch started!");
+}
+
+void loop() {
+    digitalWrite(LED_BUILTIN, HIGH);
+    Serial.println("LED ON");
+    delay(1000);
+
+    digitalWrite(LED_BUILTIN, LOW);
+    Serial.println("LED OFF");
+    delay(1000);
+}`
+            },
+            {
+                name: 'Button Input',
+                desc: 'Read a push button and control an LED',
+                board: 'arduino',
+                code: `// Button Input - Arduino
+// Reads a button on pin 2 and controls LED on pin 13
+
+const int buttonPin = 2;
+const int ledPin = 13;
+int buttonState = 0;
+
+void setup() {
+    pinMode(ledPin, OUTPUT);
+    pinMode(buttonPin, INPUT_PULLUP);
+    Serial.begin(9600);
+    Serial.println("Button demo ready");
+}
+
+void loop() {
+    buttonState = digitalRead(buttonPin);
+
+    if (buttonState == LOW) {  // Button pressed (active low)
+        digitalWrite(ledPin, HIGH);
+        Serial.println("Button PRESSED - LED ON");
+    } else {
+        digitalWrite(ledPin, LOW);
+    }
+    delay(50);
+}`
+            },
+            {
+                name: 'Analog Sensor',
+                desc: 'Read an analog sensor (potentiometer, LDR, etc.)',
+                board: 'arduino',
+                code: `// Analog Sensor Reader - Arduino
+// Reads analog value from A0 and prints to Serial
+
+const int sensorPin = A0;
+
+void setup() {
+    Serial.begin(9600);
+    Serial.println("Analog sensor reader started");
+    Serial.println("Connect a sensor to A0");
+}
+
+void loop() {
+    int sensorValue = analogRead(sensorPin);
+    float voltage = sensorValue * (5.0 / 1023.0);
+
+    Serial.print("Raw: ");
+    Serial.print(sensorValue);
+    Serial.print(" | Voltage: ");
+    Serial.print(voltage, 2);
+    Serial.println("V");
+
+    delay(500);
+}`
+            },
+            {
+                name: 'Servo Motor',
+                desc: 'Control a servo motor with sweep motion',
+                board: 'arduino',
+                code: `// Servo Sweep - Arduino
+// Sweeps a servo motor back and forth
+
+#include <Servo.h>
+
+Servo myServo;
+const int servoPin = 9;
+
+void setup() {
+    myServo.attach(servoPin);
+    Serial.begin(9600);
+    Serial.println("Servo sweep started on pin 9");
+}
+
+void loop() {
+    for (int pos = 0; pos <= 180; pos++) {
+        myServo.write(pos);
+        delay(15);
+    }
+    Serial.println("Sweep: 0 -> 180");
+
+    for (int pos = 180; pos >= 0; pos--) {
+        myServo.write(pos);
+        delay(15);
+    }
+    Serial.println("Sweep: 180 -> 0");
+}`
+            },
+            {
+                name: 'ESP32 WiFi Scan',
+                desc: 'Scan nearby WiFi networks using ESP32',
+                board: 'esp32',
+                code: `// WiFi Scanner - ESP32
+// Scans for nearby WiFi networks
+
+#include <WiFi.h>
+
+void setup() {
+    Serial.begin(115200);
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect();
+    delay(100);
+    Serial.println("ESP32 WiFi Scanner Ready");
+}
+
+void loop() {
+    Serial.println("Scanning...");
+    int n = WiFi.scanNetworks();
+
+    if (n == 0) {
+        Serial.println("No networks found");
+    } else {
+        Serial.print(n);
+        Serial.println(" networks found:");
+        for (int i = 0; i < n; ++i) {
+            Serial.print(i + 1);
+            Serial.print(": ");
+            Serial.print(WiFi.SSID(i));
+            Serial.print(" (");
+            Serial.print(WiFi.RSSI(i));
+            Serial.print(" dBm) ");
+            Serial.println(WiFi.encryptionType(i) == WIFI_AUTH_OPEN ? "[OPEN]" : "[ENCRYPTED]");
+        }
+    }
+    Serial.println("");
+    delay(5000);
+}`
+            },
+            {
+                name: 'ESP32 Web Server',
+                desc: 'Simple web server to control an LED',
+                board: 'esp32',
+                code: `// Simple Web Server - ESP32
+// Control an LED from your browser
+
+#include <WiFi.h>
+#include <WebServer.h>
+
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+const int ledPin = 2;
+
+WebServer server(80);
+
+void handleRoot() {
+    String html = "<html><head><style>";
+    html += "body{font-family:monospace;background:#111;color:#fff;text-align:center;padding:2em;}";
+    html += "a{display:inline-block;padding:1em 2em;margin:0.5em;background:#333;color:#0f0;text-decoration:none;border:2px solid #0f0;font-size:1.2em;}";
+    html += "a:hover{background:#0f0;color:#111;}";
+    html += "</style></head><body>";
+    html += "<h1>ESP32 LED Control</h1>";
+    html += "<a href='/on'>LED ON</a>";
+    html += "<a href='/off'>LED OFF</a>";
+    html += "</body></html>";
+    server.send(200, "text/html", html);
+}
+
+void handleOn() {
+    digitalWrite(ledPin, HIGH);
+    Serial.println("LED turned ON via web");
+    server.sendHeader("Location", "/");
+    server.send(303);
+}
+
+void handleOff() {
+    digitalWrite(ledPin, LOW);
+    Serial.println("LED turned OFF via web");
+    server.sendHeader("Location", "/");
+    server.send(303);
+}
+
+void setup() {
+    Serial.begin(115200);
+    pinMode(ledPin, OUTPUT);
+
+    WiFi.begin(ssid, password);
+    Serial.print("Connecting to WiFi");
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println();
+    Serial.print("Connected! IP: ");
+    Serial.println(WiFi.localIP());
+
+    server.on("/", handleRoot);
+    server.on("/on", handleOn);
+    server.on("/off", handleOff);
+    server.begin();
+    Serial.println("HTTP server started");
+}
+
+void loop() {
+    server.handleClient();
+}`
+            },
+            {
+                name: 'DHT Sensor',
+                desc: 'Read temperature & humidity (DHT11/DHT22)',
+                board: 'arduino',
+                code: `// DHT Temperature & Humidity Sensor
+// Requires DHT sensor library
+
+#include <DHT.h>
+
+#define DHTPIN 2
+#define DHTTYPE DHT11  // Change to DHT22 if using DHT22
+
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup() {
+    Serial.begin(9600);
+    dht.begin();
+    Serial.println("DHT Sensor Reader Started");
+    Serial.println("Reading every 2 seconds...");
+}
+
+void loop() {
+    float humidity = dht.readHumidity();
+    float tempC = dht.readTemperature();
+    float tempF = dht.readTemperature(true);
+
+    if (isnan(humidity) || isnan(tempC)) {
+        Serial.println("Failed to read from DHT sensor!");
+        delay(2000);
+        return;
+    }
+
+    Serial.print("Humidity: ");
+    Serial.print(humidity);
+    Serial.print("% | Temp: ");
+    Serial.print(tempC);
+    Serial.print("°C / ");
+    Serial.print(tempF);
+    Serial.println("°F");
+
+    delay(2000);
+}`
+            },
+            {
+                name: 'Ultrasonic Distance',
+                desc: 'Measure distance with HC-SR04 sensor',
+                board: 'arduino',
+                code: `// Ultrasonic Distance Sensor - HC-SR04
+// Measures distance in cm and inches
+
+const int trigPin = 9;
+const int echoPin = 10;
+
+void setup() {
+    Serial.begin(9600);
+    pinMode(trigPin, OUTPUT);
+    pinMode(echoPin, INPUT);
+    Serial.println("HC-SR04 Distance Sensor Ready");
+}
+
+void loop() {
+    // Send trigger pulse
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+
+    // Read echo
+    long duration = pulseIn(echoPin, HIGH);
+    float distanceCm = duration * 0.034 / 2;
+    float distanceIn = distanceCm / 2.54;
+
+    Serial.print("Distance: ");
+    Serial.print(distanceCm, 1);
+    Serial.print(" cm (");
+    Serial.print(distanceIn, 1);
+    Serial.println(" in)");
+
+    delay(250);
+}`
+            },
+            {
+                name: 'ESP32 Bluetooth Serial',
+                desc: 'Bluetooth Classic serial communication',
+                board: 'esp32',
+                code: `// Bluetooth Serial - ESP32
+// Send and receive data via Bluetooth Classic
+
+#include <BluetoothSerial.h>
+
+BluetoothSerial SerialBT;
+
+void setup() {
+    Serial.begin(115200);
+    SerialBT.begin("ESP32_Blueprint");
+    Serial.println("Bluetooth started! Device name: ESP32_Blueprint");
+    Serial.println("Pair with your phone and send data...");
+}
+
+void loop() {
+    // Forward data from Bluetooth to Serial
+    if (SerialBT.available()) {
+        char c = SerialBT.read();
+        Serial.write(c);
+    }
+
+    // Forward data from Serial to Bluetooth
+    if (Serial.available()) {
+        char c = Serial.read();
+        SerialBT.write(c);
+    }
+
+    delay(10);
+}`
+            },
+            {
+                name: 'Empty Sketch',
+                desc: 'Blank Arduino sketch with setup() and loop()',
+                board: 'any',
+                code: `// Blueprint Arduino IDE
+// New Sketch
+
+void setup() {
+    // Initialize serial communication
+    Serial.begin(9600);
+
+    // Put your setup code here
+}
+
+void loop() {
+    // Put your main code here
+
+}`
+            }
+        ];
+
+        // ─── CODE EDITOR ───────────────────────────────
+        const defaultCode = TEMPLATES[0].code;
+
+        const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+            mode: 'text/x-c++src',
+            theme: 'monokai',
+            lineNumbers: true,
+            matchBrackets: true,
+            autoCloseBrackets: true,
+            styleActiveLine: true,
+            indentUnit: 4,
+            tabSize: 4,
+            indentWithTabs: false,
+            lineWrapping: false,
+            extraKeys: {
+                'Ctrl-/': 'toggleComment',
+                'Cmd-/': 'toggleComment',
+                'Ctrl-S': function() { downloadSketch(); },
+                'Ctrl-R': function() { compileCode(); },
+                'Ctrl-U': function() { uploadCode(); }
+            }
+        });
+
+        // Load saved code or use default
+        const savedCode = localStorage.getItem('arduino_ide_code');
+        editor.setValue(savedCode || defaultCode);
+
+        // Auto-save every 3 seconds
+        let saveTimeout;
+        editor.on('change', () => {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                localStorage.setItem('arduino_ide_code', editor.getValue());
+            }, 3000);
+        });
+
+        // Board select handler
+        const boardSelect = document.getElementById('boardSelect');
+        const savedBoard = localStorage.getItem('arduino_ide_board');
+        if (savedBoard) boardSelect.value = savedBoard;
+
+        boardSelect.addEventListener('change', () => {
+            const board = boardSelect.value;
+            const label = boardSelect.options[boardSelect.selectedIndex].text;
+            document.getElementById('boardLabel').textContent = label;
+            document.getElementById('boardInfo').textContent = label;
+            localStorage.setItem('arduino_ide_board', board);
+        });
+        // Init label
+        document.getElementById('boardLabel').textContent = boardSelect.options[boardSelect.selectedIndex].text;
+        document.getElementById('boardInfo').textContent = boardSelect.options[boardSelect.selectedIndex].text;
+
+        // ─── TEMPLATE MODAL ────────────────────────────
+        const templateList = document.getElementById('templateList');
+        TEMPLATES.forEach((t, i) => {
+            const item = document.createElement('div');
+            item.className = 'template-item';
+            item.innerHTML = `<div class="t-name">${t.name}</div><div class="t-desc">${t.desc} (${t.board})</div>`;
+            item.addEventListener('click', () => {
+                editor.setValue(t.code);
+                localStorage.setItem('arduino_ide_code', t.code);
+                closeTemplateModal();
+                setStatus('Loaded template: ' + t.name, 'ok');
+            });
+            templateList.appendChild(item);
+        });
+
+        window.openTemplateModal = function() {
+            document.getElementById('templateModal').classList.add('active');
+        };
+        window.closeTemplateModal = function() {
+            document.getElementById('templateModal').classList.remove('active');
+        };
+
+        // ─── STATUS HELPERS ────────────────────────────
+        function setStatus(text, type) {
+            const el = document.getElementById('statusLeft');
+            el.textContent = text;
+            el.className = 'status-text' + (type ? ' ' + type : '');
+        }
+
+        function appendCompileOutput(text, cls) {
+            const el = document.getElementById('compileOutput');
+            el.classList.add('active');
+            const span = document.createElement('span');
+            span.className = cls || '';
+            span.textContent = text + '\n';
+            el.appendChild(span);
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function clearCompileOutput() {
+            const el = document.getElementById('compileOutput');
+            el.innerHTML = '';
+            el.classList.remove('active');
+        }
+
+        // ─── COMPILE ──────────────────────────────────
+        window.compileCode = async function() {
+            clearCompileOutput();
+            const code = editor.getValue();
+            const board = boardSelect.value;
+
+            setStatus('Compiling...', 'busy');
+            appendCompileOutput('=== Compiling for ' + boardSelect.options[boardSelect.selectedIndex].text + ' ===', 'co-info');
+            appendCompileOutput('Board FQBN: ' + board, 'co-info');
+            appendCompileOutput('', '');
+
+            document.getElementById('compileBtn').disabled = true;
+            document.getElementById('uploadBtn').disabled = true;
+
+            try {
+                const resp = await fetch('/api/arduino/compile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, board })
+                });
+
+                const result = await resp.json();
+
+                if (result.success) {
+                    appendCompileOutput('Compilation successful!', 'co-ok');
+                    if (result.size) appendCompileOutput('Binary size: ' + result.size + ' bytes', 'co-info');
+                    if (result.output) appendCompileOutput(result.output, '');
+                    setStatus('Compilation successful', 'ok');
+                    // Store binary for upload
+                    window._compiledBinary = result.binary;
+                    window._compiledFormat = result.format;
+                } else {
+                    appendCompileOutput('Compilation FAILED:', 'co-err');
+                    appendCompileOutput(result.error || result.output || 'Unknown error', 'co-err');
+                    setStatus('Compilation failed', 'err');
+                    window._compiledBinary = null;
+                }
+            } catch (err) {
+                appendCompileOutput('Network error: ' + err.message, 'co-err');
+                appendCompileOutput('', '');
+                appendCompileOutput('The compile server is not reachable.', 'co-warn');
+                appendCompileOutput('', '');
+                appendCompileOutput('SETUP OPTIONS:', 'co-info');
+                appendCompileOutput('1. Deploy the compile microservice (see /arduino-compiler folder)', 'co-info');
+                appendCompileOutput('   Push it to Railway.app or Render.com (free tier)', 'co-info');
+                appendCompileOutput('   Then set ARDUINO_COMPILE_URL env var on Vercel', 'co-info');
+                appendCompileOutput('', '');
+                appendCompileOutput('2. Run locally: install arduino-cli and restart the server', 'co-info');
+                appendCompileOutput('   https://arduino.github.io/arduino-cli/', 'co-info');
+                appendCompileOutput('', '');
+                appendCompileOutput('The Serial Monitor and code editor work without compilation.', 'co-ok');
+                setStatus('Compile service unavailable', 'err');
+            }
+
+            document.getElementById('compileBtn').disabled = false;
+            document.getElementById('uploadBtn').disabled = false;
+        };
+
+        // ─── UPLOAD VIA WEB SERIAL ─────────────────────
+        window.uploadCode = async function() {
+            // First compile
+            await compileCode();
+
+            if (!window._compiledBinary) {
+                setStatus('No compiled binary. Fix errors first.', 'err');
+                return;
+            }
+
+            if (!serialPort) {
+                appendCompileOutput('', '');
+                appendCompileOutput('No serial port connected. Click "Connect" first.', 'co-warn');
+                appendCompileOutput('Attempting to open port for upload...', 'co-info');
+
+                try {
+                    await connectSerial();
+                } catch {
+                    setStatus('Upload failed: no serial port', 'err');
+                    return;
+                }
+            }
+
+            setStatus('Uploading...', 'busy');
+            appendCompileOutput('', '');
+            appendCompileOutput('=== Starting Upload ===', 'co-info');
+
+            try {
+                const binaryData = base64ToUint8Array(window._compiledBinary);
+                const board = boardSelect.value;
+
+                if (board.startsWith('esp32:')) {
+                    await uploadESP32(binaryData);
+                } else {
+                    await uploadAVR(binaryData);
+                }
+
+                appendCompileOutput('Upload complete!', 'co-ok');
+                setStatus('Upload successful!', 'ok');
+            } catch (err) {
+                appendCompileOutput('Upload error: ' + err.message, 'co-err');
+                setStatus('Upload failed', 'err');
+            }
+        };
+
+        function base64ToUint8Array(b64) {
+            const raw = atob(b64);
+            const arr = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+            return arr;
+        }
+
+        // ─── STK500v1 UPLOAD (Arduino AVR) ─────────────
+        const STK = {
+            OK: 0x10, INSYNC: 0x14, CRC_EOP: 0x20,
+            GET_SYNC: 0x30, GET_PARAMETER: 0x41,
+            ENTER_PROGMODE: 0x50, LEAVE_PROGMODE: 0x51,
+            LOAD_ADDRESS: 0x55, PROG_PAGE: 0x64,
+            READ_SIGN: 0x75
+        };
+
+        async function uploadAVR(binaryData) {
+            const writer = serialPort.writable.getWriter();
+            let reader;
+            const PAGE_SIZE = 128;
+
+            // Close existing reader if any
+            if (serialReader) {
+                await serialReader.cancel();
+                serialReader.releaseLock();
+                serialReader = null;
+            }
+
+            reader = serialPort.readable.getReader();
+
+            async function sendAndWait(data, timeout = 2000) {
+                await writer.write(new Uint8Array(data));
+                const start = Date.now();
+                const response = [];
+
+                while (Date.now() - start < timeout) {
+                    try {
+                        const { value, done } = await Promise.race([
+                            reader.read(),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), timeout))
+                        ]);
+                        if (done) break;
+                        if (value) response.push(...value);
+                        if (response.length >= 2 && response[0] === STK.INSYNC) return response;
+                    } catch {
+                        break;
+                    }
+                }
+                return response;
+            }
+
+            try {
+                // Reset board via DTR toggle
+                appendCompileOutput('Resetting board...', 'co-info');
+                await serialPort.setSignals({ dataTerminalReady: false, requestToSend: false });
+                await new Promise(r => setTimeout(r, 250));
+                await serialPort.setSignals({ dataTerminalReady: true, requestToSend: true });
+                await new Promise(r => setTimeout(r, 50));
+
+                // Sync with bootloader
+                appendCompileOutput('Syncing with bootloader...', 'co-info');
+                let synced = false;
+                for (let i = 0; i < 10; i++) {
+                    const resp = await sendAndWait([STK.GET_SYNC, STK.CRC_EOP], 500);
+                    if (resp.length >= 2 && resp[0] === STK.INSYNC && resp[1] === STK.OK) {
+                        synced = true;
+                        break;
+                    }
+                    await new Promise(r => setTimeout(r, 50));
+                }
+                if (!synced) throw new Error('Could not sync with bootloader. Is the board in bootloader mode?');
+                appendCompileOutput('Bootloader synced!', 'co-ok');
+
+                // Enter programming mode
+                const enterResp = await sendAndWait([STK.ENTER_PROGMODE, STK.CRC_EOP]);
+                if (!enterResp.length || enterResp[0] !== STK.INSYNC) {
+                    throw new Error('Failed to enter programming mode');
+                }
+                appendCompileOutput('Programming mode entered', 'co-info');
+
+                // Upload pages
+                const totalPages = Math.ceil(binaryData.length / PAGE_SIZE);
+                for (let page = 0; page < totalPages; page++) {
+                    const addr = page * (PAGE_SIZE / 2); // Word address
+                    const addrLow = addr & 0xFF;
+                    const addrHigh = (addr >> 8) & 0xFF;
+
+                    // Load address
+                    await sendAndWait([STK.LOAD_ADDRESS, addrLow, addrHigh, STK.CRC_EOP]);
+
+                    // Program page
+                    const offset = page * PAGE_SIZE;
+                    const pageData = binaryData.slice(offset, offset + PAGE_SIZE);
+                    const padded = new Uint8Array(PAGE_SIZE);
+                    padded.set(pageData);
+
+                    const cmd = [STK.PROG_PAGE, 0x00, PAGE_SIZE, 0x46 /* 'F' for flash */];
+                    cmd.push(...padded);
+                    cmd.push(STK.CRC_EOP);
+
+                    const progResp = await sendAndWait(cmd);
+                    if (!progResp.length || progResp[0] !== STK.INSYNC) {
+                        throw new Error('Failed to program page ' + page);
+                    }
+
+                    if (page % 10 === 0 || page === totalPages - 1) {
+                        const pct = Math.round(((page + 1) / totalPages) * 100);
+                        appendCompileOutput('Uploading... ' + pct + '%', 'co-info');
+                        setStatus('Uploading: ' + pct + '%', 'busy');
+                    }
+                }
+
+                // Leave programming mode
+                await sendAndWait([STK.LEAVE_PROGMODE, STK.CRC_EOP]);
+                appendCompileOutput('Programming mode exited', 'co-info');
+
+            } finally {
+                writer.releaseLock();
+                reader.releaseLock();
+
+                // Restart serial reading
+                startSerialReading();
+            }
+        }
+
+        // ─── ESP32 UPLOAD ──────────────────────────────
+        async function uploadESP32(binaryData) {
+            appendCompileOutput('ESP32 upload requires esptool.', 'co-warn');
+            appendCompileOutput('Downloading compiled binary for manual flash...', 'co-info');
+
+            // Offer binary download as fallback
+            const blob = new Blob([binaryData], { type: 'application/octet-stream' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'firmware.bin';
+            a.click();
+            URL.revokeObjectURL(url);
+
+            appendCompileOutput('Binary downloaded as firmware.bin', 'co-ok');
+            appendCompileOutput('Flash with: esptool.py --port COM3 write_flash 0x10000 firmware.bin', 'co-info');
+            appendCompileOutput('Or use ESP Flash Download Tool from Espressif', 'co-info');
+        }
+
+        // ─── WEB SERIAL API ───────────────────────────
+        let serialPort = null;
+        let serialReader = null;
+        let serialReadLoop = false;
+
+        async function connectSerial() {
+            if (!('serial' in navigator)) {
+                appendSerialOutput('Web Serial API not supported. Use Chrome/Edge 89+.', 'err');
+                throw new Error('Web Serial not supported');
+            }
+
+            try {
+                serialPort = await navigator.serial.requestPort();
+                const baudRate = parseInt(document.getElementById('baudRate').value);
+                await serialPort.open({ baudRate });
+
+                document.getElementById('serialStatus').classList.add('connected');
+                document.getElementById('serialStatus').title = 'Connected';
+                document.getElementById('serialConnectBtn').textContent = 'Disconnect';
+                document.getElementById('portInfo').textContent = 'Connected @ ' + baudRate + ' baud';
+                document.getElementById('connectionStatus').textContent = 'Connected';
+
+                appendSerialOutput('-- Connected at ' + baudRate + ' baud --', 'sys');
+                setStatus('Serial connected', 'ok');
+
+                startSerialReading();
+            } catch (err) {
+                if (err.name !== 'NotFoundError') {
+                    appendSerialOutput('Connection error: ' + err.message, 'err');
+                }
+                throw err;
+            }
+        }
+
+        async function disconnectSerial() {
+            serialReadLoop = false;
+            if (serialReader) {
+                try {
+                    await serialReader.cancel();
+                    serialReader.releaseLock();
+                } catch {}
+                serialReader = null;
+            }
+            if (serialPort) {
+                try { await serialPort.close(); } catch {}
+                serialPort = null;
+            }
+
+            document.getElementById('serialStatus').classList.remove('connected');
+            document.getElementById('serialStatus').title = 'Disconnected';
+            document.getElementById('serialConnectBtn').textContent = 'Connect';
+            document.getElementById('portInfo').textContent = 'Not connected';
+            document.getElementById('connectionStatus').textContent = 'Idle';
+
+            appendSerialOutput('-- Disconnected --', 'sys');
+            setStatus('Serial disconnected', '');
+        }
+
+        window.toggleSerial = async function() {
+            if (serialPort) {
+                await disconnectSerial();
+            } else {
+                try {
+                    await connectSerial();
+                } catch {}
+            }
+        };
+
+        function startSerialReading() {
+            if (!serialPort || !serialPort.readable) return;
+            serialReadLoop = true;
+
+            (async () => {
+                while (serialReadLoop && serialPort && serialPort.readable) {
+                    try {
+                        serialReader = serialPort.readable.getReader();
+                        while (serialReadLoop) {
+                            const { value, done } = await serialReader.read();
+                            if (done) break;
+                            if (value) {
+                                const text = new TextDecoder().decode(value);
+                                appendSerialOutput(text, 'rx');
+                            }
+                        }
+                    } catch (err) {
+                        if (serialReadLoop) {
+                            appendSerialOutput('Read error: ' + err.message, 'err');
+                        }
+                    } finally {
+                        if (serialReader) {
+                            try { serialReader.releaseLock(); } catch {}
+                            serialReader = null;
+                        }
+                    }
+                }
+            })();
+        }
+
+        window.sendSerial = async function() {
+            if (!serialPort || !serialPort.writable) {
+                appendSerialOutput('Not connected. Connect first.', 'err');
+                return;
+            }
+
+            const input = document.getElementById('serialInput');
+            const text = input.value;
+            if (!text) return;
+
+            const lineEnding = document.getElementById('lineEnding').value;
+            const data = text + lineEnding;
+
+            try {
+                const writer = serialPort.writable.getWriter();
+                const encoded = new TextEncoder().encode(data);
+                await writer.write(encoded);
+                writer.releaseLock();
+
+                appendSerialOutput(text, 'tx');
+                input.value = '';
+            } catch (err) {
+                appendSerialOutput('Send error: ' + err.message, 'err');
+            }
+        };
+
+        let autoScroll = true;
+        function appendSerialOutput(text, cls) {
+            const el = document.getElementById('serialOutput');
+            const span = document.createElement('span');
+            span.className = cls || '';
+            span.textContent = text + (cls !== 'rx' ? '\n' : '');
+            el.appendChild(span);
+
+            // Limit buffer
+            while (el.children.length > 5000) {
+                el.removeChild(el.firstChild);
+            }
+
+            if (autoScroll) el.scrollTop = el.scrollHeight;
+        }
+
+        window.clearSerial = function() {
+            const el = document.getElementById('serialOutput');
+            el.innerHTML = '<span class="sys">-- Serial Monitor Cleared --\n</span>';
+        };
+
+        // ─── DOWNLOAD SKETCH ───────────────────────────
+        window.downloadSketch = function() {
+            const code = editor.getValue();
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sketch.ino';
+            a.click();
+            URL.revokeObjectURL(url);
+            setStatus('Sketch downloaded', 'ok');
+        };
+
+        // ─── KEYBOARD SHORTCUTS ────────────────────────
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeTemplateModal();
+                document.getElementById('compileOutput').classList.remove('active');
+            }
+        });
+
+        // Handle serial port disconnect
+        if ('serial' in navigator) {
+            navigator.serial.addEventListener('disconnect', (e) => {
+                if (serialPort === e.target) {
+                    disconnectSerial();
+                    appendSerialOutput('-- Port disconnected --', 'sys');
+                }
+            });
+        }
+
+        // ─── BAUD RATE CHANGE WHILE CONNECTED ──────────
+        document.getElementById('baudRate').addEventListener('change', async () => {
+            if (serialPort) {
+                await disconnectSerial();
+                await connectSerial();
+            }
+        });
+
+    })();
+    </script>
+</body>
+</html>

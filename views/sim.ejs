@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <title>Arduino & ESP32 Challenge Simulator | Blueprint</title>
+    <style>
+        @font-face { font-family: mcten; src: url('resources/mc10.woff2') format('woff2'); }
+        @font-face { font-family: mc7;   src: url('resources/mc7.woff2')  format('woff2'); }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        body, html {
+            margin:0; padding:0; height:100%;
+            overflow-x:hidden; overflow-y:auto;
+            font-family: mcten, monospace;
+            font-size: clamp(16px, 2.5vw, 22px);
+            cursor: url('resources/crosshair-32.png') 16 16, crosshair;
+            line-height:1.4;
+            background:#0a0a0a;
+            color:#DDD;
+        }
+        a { color:#66aaff; text-decoration:none; cursor: url('resources/crosshair-32.png') 16 16, crosshair; }
+        a:hover { color:#FFFFA0; }
+
+        /* custom scrollbar */
+        ::-webkit-scrollbar { width:8px; }
+        ::-webkit-scrollbar-track { background:#0a0a0a; }
+        ::-webkit-scrollbar-thumb { background:#333; border-radius:4px; }
+        ::-webkit-scrollbar-thumb:hover { background:#555; }
+
+        /* ── BG VIDEO ─────────────────────────────────── */
+        .bg-video {
+            position:fixed; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            min-width:100%; min-height:100%;
+            width:auto; height:auto;
+            z-index:-1; object-fit:cover; opacity:0.2;
+        }
+
+        /* ── NAVBAR ───────────────────────────────────── */
+        .navbar {
+            position:fixed; top:0; left:0; right:0; height:56px;
+            background:linear-gradient(180deg,#1a1a1ae8,#0a0a0aee);
+            border-bottom:2px solid #333;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2, 0 4px 20px #0008;
+            display:flex; justify-content:space-between; align-items:center;
+            padding:0 1.5rem; z-index:100;
+        }
+        .nav-brand { display:flex; align-items:center; gap:.8rem; }
+        .nav-logo { height:36px; image-rendering:pixelated; }
+        .nav-title {
+            color:#FFFFA0; font-family:'mc7',monospace;
+            font-size:1.2rem; text-shadow:2px 2px #000A;
+            letter-spacing:.05em;
+        }
+        .nav-links { display:flex; gap:.6rem; align-items:center; }
+        .nav-btn {
+            padding:.4rem .9rem;
+            border:2px solid #444;
+            background:#3a3a3a url('resources/bgbtn.png') center/cover;
+            image-rendering:pixelated;
+            color:#DDD; font-family:'mc7',monospace; font-size:.75rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF5;
+            text-decoration:none; transition:all .15s;
+        }
+        .nav-btn:hover {
+            color:#FFFFA0; border-color:#FFFFA0;
+            transform:translateY(-1px);
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF5, 0 2px 8px #FFFFA033;
+        }
+        .nav-btn:active { transform:translateY(1px); }
+
+        /* ── MAIN LAYOUT ──────────────────────────────── */
+        .main {
+            margin-top:56px; padding:1.5rem 2rem 3rem;
+            min-height:calc(100vh - 56px);
+            max-width:1400px; margin-left:auto; margin-right:auto;
+        }
+
+        /* ── HERO BANNER ──────────────────────────────── */
+        .hero-banner {
+            background:linear-gradient(135deg,#1a0a2a88,#0a1a2a88);
+            border:2px solid #333;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF1, 0 4px 20px #0004;
+            padding:1.5rem 2rem; margin-bottom:1.5rem;
+            display:flex; align-items:center; gap:1.5rem;
+            border-radius:4px;
+        }
+        .hero-icon { font-size:3rem; }
+        .hero-text h1 {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1.3rem;
+            text-shadow:2px 2px #000A; margin:0 0 .3rem 0;
+        }
+        .hero-text p {
+            color:#AAA; font-size:.8rem; margin:0; line-height:1.5;
+        }
+
+        /* ── STATS BAR ────────────────────────────────── */
+        .stats-bar {
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+            gap:.8rem; margin-bottom:1.2rem;
+        }
+        .stat-card {
+            background:linear-gradient(180deg,#141414f0,#0e0e0ef0);
+            border:2px solid #2a2a2a;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2;
+            padding:.8rem 1rem; text-align:center;
+            border-radius:4px; transition:border-color .2s;
+        }
+        .stat-card:hover { border-color:#444; }
+        .stat-label {
+            color:#777; font-family:'mc7',monospace; font-size:.6rem;
+            text-transform:uppercase; letter-spacing:.1em; margin-bottom:.3rem;
+        }
+        .stat-value {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1.4rem;
+            text-shadow:2px 2px #000A;
+        }
+        .stat-value.xp { color:#66ff66; }
+        .stat-value.streak { color:#ff9944; }
+
+        /* ── XP PROGRESS ──────────────────────────────── */
+        .xp-bar-wrap {
+            width:100%; margin-bottom:1.5rem;
+            background:linear-gradient(180deg,#141414f0,#0e0e0ef0);
+            border:2px solid #2a2a2a;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2;
+            padding:.6rem 1rem; border-radius:4px;
+        }
+        .xp-bar-header {
+            display:flex; justify-content:space-between; margin-bottom:.4rem;
+        }
+        .xp-bar-label {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.7rem;
+            text-shadow:2px 2px #000A;
+        }
+        .xp-bar-outer {
+            height:16px; background:#1a1a1a; border:2px solid #333;
+            box-shadow:inset 0 2px 3px #0008; border-radius:2px;
+        }
+        .xp-bar-inner {
+            height:100%; background:linear-gradient(to right,#44cc44,#66ff66);
+            box-shadow:inset 0 -2px #0003, inset 0 2px #fff3;
+            transition:width .6s ease; border-radius:1px;
+        }
+
+        /* ── MODE SELECTOR ────────────────────────────── */
+        .mode-selector {
+            display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;
+        }
+        .mode-btn {
+            flex:1; min-width:200px; padding:1.2rem 1rem;
+            border:2px solid #333;
+            background:linear-gradient(180deg,#181818f0,#0e0e0ef0);
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2;
+            text-align:center; transition:all .2s; border-radius:4px;
+        }
+        .mode-btn:hover {
+            border-color:#666;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2, 0 2px 8px #0004;
+        }
+        .mode-btn.active {
+            border-color:#FFFFA0;
+            box-shadow:0 0 16px #FFFFA022, inset -2px -4px #0006, inset 2px 2px #FFFFA018;
+        }
+        .mode-icon { font-size:2.2rem; margin-bottom:.4rem; display:block; }
+        .mode-name {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.9rem;
+            text-shadow:2px 2px #000A;
+        }
+        .mode-desc {
+            color:#999; font-family:mcten,monospace; font-size:.7rem;
+            margin-top:.3rem; line-height:1.4;
+        }
+
+        /* ── TABS ─────────────────────────────────────── */
+        .tabs {
+            display:flex; gap:0; margin-bottom:0; flex-wrap:wrap;
+        }
+        .tab-btn {
+            padding:.55rem 1.2rem;
+            border:2px solid #333; border-bottom:none;
+            background:linear-gradient(180deg,#1a1a1a,#111);
+            color:#777; font-family:'mc7',monospace; font-size:.75rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            transition:all .2s; border-radius:4px 4px 0 0;
+        }
+        .tab-btn:hover { color:#DDD; background:#222; }
+        .tab-btn.active {
+            color:#FFFFA0; border-color:#FFFFA0; border-bottom-color:transparent;
+            background:linear-gradient(180deg,#1a1a1a,#0a0a0a);
+            box-shadow:0 -2px 8px #FFFFA011;
+        }
+        .tab-content {
+            display:none; border:2px solid #333; border-top:none; padding:1.2rem;
+            background:rgba(10,10,10,.85); border-radius:0 4px 4px 4px;
+        }
+        .tab-content.active { display:block; }
+
+        /* ── SECTION TITLE ────────────────────────────── */
+        .section-title {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1.1rem;
+            text-shadow:2px 2px #000A;
+            margin:0 0 1rem 0;
+        }
+
+        /* ── LEVEL GRID ───────────────────────────────── */
+        .level-grid {
+            display:grid;
+            grid-template-columns:repeat(auto-fill, minmax(280px,1fr));
+            gap:1rem;
+        }
+        .level-card {
+            background:linear-gradient(180deg,#141414f0,#0a0a0af0);
+            border:2px solid #2a2a2a;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2;
+            padding:1.1rem; position:relative;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            transition:all .2s; border-radius:4px;
+        }
+        .level-card:hover:not(.locked) {
+            border-color:#FFFFA0;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFFFA018, 0 2px 12px #FFFFA011;
+            transform:translateY(-2px);
+        }
+        .level-card.locked {
+            opacity:.45; cursor:not-allowed; filter:grayscale(.7);
+        }
+        .level-card.completed {
+            border-color:#44cc44;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #44cc4418;
+        }
+        .level-header {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-bottom:.5rem;
+        }
+        .level-icon { font-size:1.7rem; }
+        .level-badge {
+            font-family:'mc7',monospace; font-size:.55rem;
+            padding:.2rem .5rem; border:1px solid;
+            text-transform:uppercase; letter-spacing:.05em;
+            border-radius:2px;
+        }
+        .level-badge.easy   { color:#4CAF50; border-color:#4CAF5066; background:#4CAF5011; }
+        .level-badge.medium { color:#FF9800; border-color:#FF980066; background:#FF980011; }
+        .level-badge.hard   { color:#F44336; border-color:#F4433666; background:#F4433611; }
+        .level-badge.boss   { color:#FFD700; border-color:#FFD70066; background:#FFD70011; }
+        .level-badge.locked-b { color:#666; border-color:#666; }
+        .level-num {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1rem;
+            text-shadow:2px 2px #000A; margin:0 0 .2rem 0;
+        }
+        .level-name {
+            color:#DDD; font-family:'mc7',monospace; font-size:.8rem;
+            margin-bottom:.5rem;
+        }
+        .level-concepts {
+            display:flex; flex-wrap:wrap; gap:.25rem; margin-bottom:.5rem;
+        }
+        .concept-tag {
+            font-family:mcten,monospace; font-size:.6rem;
+            background:rgba(100,100,255,.1); color:#88aadd;
+            padding:.15rem .4rem; border:1px solid rgba(100,100,255,.2);
+            border-radius:2px;
+        }
+        .level-progress {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-top:.3rem;
+        }
+        .level-progress-text {
+            color:#888; font-family:'mc7',monospace; font-size:.6rem;
+        }
+        .level-stars { font-size:.85rem; }
+        .level-lock-overlay {
+            position:absolute; inset:0;
+            display:flex; flex-direction:column;
+            justify-content:center; align-items:center;
+            background:rgba(0,0,0,.65); border-radius:4px;
+        }
+        .lock-icon { font-size:1.8rem; margin-bottom:.3rem; }
+        .lock-text {
+            color:#888; font-family:'mc7',monospace; font-size:.65rem;
+        }
+        .level-actions {
+            display:flex; gap:.4rem; margin-top:.6rem; padding-top:.5rem;
+            border-top:1px solid #222;
+        }
+        .level-action-btn {
+            flex:1; padding:.3rem .4rem; text-align:center;
+            background:#1a1a1a; border:1px solid #333;
+            color:#AAA; font-family:'mc7',monospace; font-size:.55rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            transition:all .15s; border-radius:2px;
+        }
+        .level-action-btn:hover { color:#FFFFA0; border-color:#FFFFA0; background:#222; }
+        .level-action-btn.learn { color:#bb88ff; border-color:#4a2a7a; }
+        .level-action-btn.learn:hover { color:#dd99ff; border-color:#bb88ff; }
+        .level-action-btn.play { color:#66ff66; border-color:#2a5a2a; }
+        .level-action-btn.play:hover { color:#88ff88; border-color:#66ff66; }
+
+        /* ── CHALLENGES LIST ──────────────────────────── */
+        .challenges-panel { display:none; }
+        .challenges-panel.active { display:block; }
+        .challenge-list {
+            display:grid;
+            grid-template-columns:repeat(auto-fill, minmax(280px,1fr));
+            gap:.8rem;
+        }
+        .challenge-card {
+            background:linear-gradient(135deg,#141414f0,#0e0e0ef0);
+            border:2px solid #2a2a2a;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF1;
+            padding:1rem; cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            transition:all .2s; border-radius:4px;
+        }
+        .challenge-card:hover { border-color:#FFFFA0; transform:translateY(-1px); }
+        .challenge-card.solved { border-color:#44cc44; }
+        .challenge-title {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.85rem;
+            text-shadow:2px 2px #000A; margin-bottom:.3rem;
+        }
+        .challenge-topic {
+            color:#66aaff; font-family:'mc7',monospace; font-size:.6rem;
+            margin-bottom:.4rem;
+        }
+        .challenge-desc-short {
+            color:#AAA; font-size:.72rem; line-height:1.4;
+            display:-webkit-box; -webkit-line-clamp:2;
+            -webkit-box-orient:vertical; overflow:hidden;
+        }
+        .challenge-footer {
+            display:flex; justify-content:space-between; align-items:center;
+            margin-top:.6rem; padding-top:.5rem; border-top:1px solid #222;
+        }
+        .challenge-score { color:#66ff66; font-family:'mc7',monospace; font-size:.65rem; }
+        .challenge-xp { color:#FFFFA0; font-family:'mc7',monospace; font-size:.65rem; }
+
+        /* ── BACK BUTTON ──────────────────────────────── */
+        .back-btn {
+            margin-bottom:1rem; display:inline-flex; align-items:center; gap:.3rem;
+            padding:.35rem .8rem; border:2px solid #444;
+            background:#2a2a2a;
+            color:#DDD; font-family:'mc7',monospace; font-size:.75rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            transition:all .15s; border-radius:3px;
+        }
+        .back-btn:hover { color:#FFFFA0; border-color:#FFFFA0; }
+
+        /* ── ACHIEVEMENTS ─────────────────────────────── */
+        .achievements-grid {
+            display:grid;
+            grid-template-columns:repeat(auto-fill, minmax(240px,1fr));
+            gap:.8rem;
+        }
+        .achievement-card {
+            background:linear-gradient(180deg,#141414f0,#0e0e0ef0);
+            border:2px solid #2a2a2a;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF1;
+            padding:.7rem .8rem; display:flex; gap:.7rem; align-items:center;
+            border-radius:4px; transition:all .2s;
+        }
+        .achievement-card.earned {
+            border-color:#FFD700;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFD70022;
+        }
+        .achievement-card:not(.earned) { opacity:.35; filter:grayscale(.8); }
+        .ach-icon { font-size:1.6rem; }
+        .ach-info { flex:1; }
+        .ach-name {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.75rem;
+            text-shadow:2px 2px #000A;
+        }
+        .ach-desc {
+            color:#AAA; font-family:mcten,monospace; font-size:.6rem;
+            margin-top:.15rem;
+        }
+
+        /* ── LEADERBOARD ──────────────────────────────── */
+        .lb-table { width:100%; border-collapse:collapse; }
+        .lb-table th {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.7rem;
+            text-shadow:2px 2px #000A; text-align:left;
+            padding:.5rem .6rem; border-bottom:2px solid #333;
+        }
+        .lb-table td {
+            color:#DDD; font-family:mcten,monospace; font-size:.75rem;
+            padding:.45rem .6rem; border-bottom:1px solid #1a1a1a;
+        }
+        .lb-rank { color:#FFD700; font-family:'mc7',monospace; }
+        .lb-you { background:rgba(255,255,160,.05); }
+
+        /* ── LESSON MODAL ─────────────────────────────── */
+        .lesson-modal {
+            display:none; position:fixed; inset:0; z-index:200;
+            background:rgba(0,0,0,.92);
+            justify-content:center; align-items:flex-start;
+            padding:2rem; overflow-y:auto;
+        }
+        .lesson-modal.active { display:flex; }
+        .lesson-card {
+            background:linear-gradient(180deg,#141414,#0a0a0a);
+            border:2px solid #444;
+            box-shadow:0 8px 40px #0008;
+            padding:2rem 2.5rem; max-width:800px; width:100%;
+            border-radius:6px; position:relative;
+            margin:2rem auto;
+        }
+        .lesson-close {
+            position:absolute; top:1rem; right:1rem;
+            background:#2a2a2a; border:1px solid #555;
+            color:#DDD; font-family:'mc7',monospace; font-size:.7rem;
+            padding:.3rem .6rem; cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            transition:all .15s; border-radius:3px;
+        }
+        .lesson-close:hover { color:#FFFFA0; border-color:#FFFFA0; }
+        .lesson-card h2 {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1.2rem;
+            text-shadow:2px 2px #000A; margin:0 0 .5rem 0;
+        }
+        .lesson-intro {
+            color:#AAA; font-size:.85rem; font-style:italic;
+            margin-bottom:1.2rem; padding-bottom:.8rem;
+            border-bottom:1px solid #2a2a2a;
+        }
+        .lesson-section h3 {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:.85rem;
+            margin:1.5rem 0 .5rem 0; text-shadow:1px 1px #000A;
+        }
+        .lesson-section h3:first-child { margin-top:.5rem; }
+        .lesson-section .lesson-text {
+            color:#CCC; font-size:.85rem; line-height:1.7; margin:.3rem 0 .6rem 0;
+        }
+        .lesson-section .lesson-text code {
+            background:#1a1a1a; padding:.15rem .4rem; border-radius:3px;
+            border:1px solid #333; font-family:'JetBrains Mono',monospace;
+            color:#66aaff; font-size:.8rem;
+        }
+        .lesson-code {
+            background:#111; border:1px solid #2a2a2a; border-left:3px solid #66aaff;
+            padding:.7rem .8rem; font-family:'JetBrains Mono',monospace;
+            font-size:.78rem; color:#DDD; white-space:pre-wrap;
+            overflow-x:auto; margin:.3rem 0 1rem 0; border-radius:0 3px 3px 0;
+        }
+        .lesson-tip {
+            background:#1a1200; border:1px solid #554400; border-left:3px solid #ffcc44;
+            padding:.7rem .8rem; color:#ffcc66; font-size:.85rem;
+            margin-top:1.5rem; border-radius:0 3px 3px 0; line-height:1.5;
+        }
+        .lesson-tip::before { content:'💡 Pro Tip: '; font-family:'mc7',monospace; font-size:.7rem; }
+        .lesson-start-btn {
+            display:block; margin:1.5rem auto 0; padding:.5rem 2rem;
+            background:linear-gradient(180deg,#2a6a2a,#1a4a1a);
+            border:2px solid #66ff66;
+            color:#66ff66; font-family:'mc7',monospace; font-size:.8rem;
+            cursor: url('resources/crosshair-32.png') 16 16, pointer;
+            transition:all .2s; border-radius:4px;
+        }
+        .lesson-start-btn:hover {
+            background:linear-gradient(180deg,#3a8a3a,#2a6a2a);
+            box-shadow:0 0 12px #66ff6633;
+        }
+
+        /* ── FOOTER ───────────────────────────────────── */
+        .sim-footer {
+            text-align:center; padding:2rem 1rem; margin-top:2rem;
+            border-top:1px solid #222; color:#555; font-size:.7rem;
+        }
+        .sim-footer a { color:#66aaff; }
+
+        /* ── RESPONSIVE ───────────────────────────────── */
+        @media (max-width:768px) {
+            .navbar { padding:0 1rem; }
+            .nav-title { font-size:.9rem; }
+            .main { padding:1rem; }
+            .hero-banner { flex-direction:column; text-align:center; padding:1rem; }
+            .hero-icon { font-size:2rem; }
+            .level-grid, .challenge-list, .achievements-grid { grid-template-columns:1fr; }
+            .stats-bar { grid-template-columns:repeat(2,1fr); }
+            .lesson-card { padding:1.5rem; }
+        }
+        @media (max-width:480px) {
+            .mode-selector { flex-direction:column; }
+            .stats-bar { grid-template-columns:1fr; }
+        }
+    </style>
+    <link rel="icon" type="image/png" href="resources/logo.png">
+</head>
+<body>
+    <video class="bg-video" autoplay muted loop playsinline>
+        <source src="https://7oaoepmc5nhfkhkk.public.blob.vercel-storage.com/bcgk.mp4" type="video/mp4">
+    </video>
+
+    <!-- Lesson Modal -->
+    <div class="lesson-modal" id="lessonModal">
+        <div class="lesson-card">
+            <button class="lesson-close" onclick="closeLessonModal()">✕ CLOSE</button>
+            <h2 id="lessonModalTitle">Lesson</h2>
+            <div class="lesson-intro" id="lessonModalIntro"></div>
+            <div class="lesson-section" id="lessonModalContent"></div>
+            <button class="lesson-start-btn" id="lessonStartBtn" onclick="closeLessonModal()">START CHALLENGES →</button>
+        </div>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-brand">
+            <img src="resources/logo.png" alt="Blueprint" class="nav-logo">
+            <span class="nav-title">ARDUINO SIMULATOR</span>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-btn">← HOME</a>
+            <button class="nav-btn" onclick="resetProgress()">↻ RESET</button>
+        </div>
+    </nav>
+
+    <main class="main">
+        <!-- Hero -->
+        <div class="hero-banner">
+            <span class="hero-icon">⚔️</span>
+            <div class="hero-text">
+                <h1>Arduino & ESP32 Challenge Simulator</h1>
+                <p>Learn C++ for Arduino and ESP32 through 10 levels of hands-on challenges. From blinking LEDs to building full IoT systems — earn XP, unlock achievements, and become a hardware hacker.</p>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-label">Total XP</div>
+                <div class="stat-value xp" id="totalXp">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Challenges Solved</div>
+                <div class="stat-value" id="solvedCount">0 / 0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Current Level</div>
+                <div class="stat-value" id="currentLevel">1</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Daily Streak</div>
+                <div class="stat-value streak" id="streakCount">0 🔥</div>
+            </div>
+        </div>
+
+        <!-- XP Progress -->
+        <div class="xp-bar-wrap">
+            <div class="xp-bar-header">
+                <span class="xp-bar-label" id="xpLabel">XP: 0 / 80</span>
+                <span class="xp-bar-label" id="nextLevelLabel">Next: Level 2</span>
+            </div>
+            <div class="xp-bar-outer">
+                <div class="xp-bar-inner" id="xpBar" style="width:0%"></div>
+            </div>
+        </div>
+
+        <!-- Mode Selector -->
+        <div class="mode-selector">
+            <div class="mode-btn active" id="modeBeginner" onclick="setMode('beginner')">
+                <span class="mode-icon">🧱</span>
+                <div class="mode-name">BEGINNER</div>
+                <div class="mode-desc">EduKits block coding — build Arduino logic with drag-and-drop blocks</div>
+            </div>
+            <div class="mode-btn" id="modeAdvanced" onclick="setMode('advanced')">
+                <span class="mode-icon">⌨️</span>
+                <div class="mode-name">ADVANCED</div>
+                <div class="mode-desc">Write raw Arduino/ESP32 C++ code — full power, full control</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('levels')">📋 LEVELS</button>
+            <button class="tab-btn" onclick="showTab('achievements')">🏆 ACHIEVEMENTS</button>
+            <button class="tab-btn" onclick="showTab('leaderboard')">📊 LEADERBOARD</button>
+        </div>
+
+        <!-- Levels Tab -->
+        <div class="tab-content active" id="tab-levels">
+            <div id="levelGrid" class="level-grid"></div>
+            <div id="challengesPanel" class="challenges-panel">
+                <button class="back-btn" onclick="closeChallenges()">← Back to Levels</button>
+                <h2 class="section-title" id="challengesPanelTitle">Level 1 Challenges</h2>
+                <div class="challenge-list" id="challengeList"></div>
+            </div>
+        </div>
+
+        <!-- Achievements Tab -->
+        <div class="tab-content" id="tab-achievements">
+            <div class="achievements-grid" id="achievementsGrid"></div>
+        </div>
+
+        <!-- Leaderboard Tab -->
+        <div class="tab-content" id="tab-leaderboard">
+            <table class="lb-table">
+                <thead>
+                    <tr><th>#</th><th>Player</th><th>XP</th><th>Level</th><th>Solved</th></tr>
+                </thead>
+                <tbody id="lbBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <div class="sim-footer">
+            Blueprint | GIIS Robotics Club &mdash; <a href="https://edukits.co/code/#/d/draft/editor" target="_blank">Open EduKits Block Editor</a>
+        </div>
+    </main>
+
+    <script src="cpp-data.js"></script>
+    <script>
+    (() => {
+        const DATA = window.CPP_SIM;
+        const LS_KEY = 'cpp_sim_progress';
+
+        // ─── STATE ─────────────────────────────────────
+        function getState() {
+            const raw = localStorage.getItem(LS_KEY);
+            if (raw) return JSON.parse(raw);
+            return {
+                mode: 'beginner',
+                xp: 0,
+                solved: {},
+                achievements: [],
+                streak: { count: 0, lastDate: null }
+            };
+        }
+        function saveState(s) { localStorage.setItem(LS_KEY, JSON.stringify(s)); }
+        let state = getState();
+
+        // ─── STREAK ────────────────────────────────────
+        function updateStreak() {
+            const today = new Date().toISOString().slice(0, 10);
+            if (state.streak.lastDate === today) return;
+            const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+            if (state.streak.lastDate === yesterday) {
+                state.streak.count++;
+            } else if (state.streak.lastDate !== today) {
+                state.streak.count = 1;
+            }
+            state.streak.lastDate = today;
+            checkAchievements();
+            saveState(state);
+        }
+
+        // ─── MODE ──────────────────────────────────────
+        window.setMode = function(m) {
+            state.mode = m;
+            saveState(state);
+            document.getElementById('modeBeginner').classList.toggle('active', m === 'beginner');
+            document.getElementById('modeAdvanced').classList.toggle('active', m === 'advanced');
+        };
+
+        // ─── TABS ──────────────────────────────────────
+        window.showTab = function(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.toggle('active', b.textContent.toLowerCase().includes(tab));
+            });
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            if (tab === 'levels') closeChallenges();
+        };
+
+        // ─── LESSON MODAL ──────────────────────────────
+        window.openLessonModal = function(levelId) {
+            const lesson = DATA.lessons[levelId];
+            if (!lesson) return;
+
+            document.getElementById('lessonModalTitle').textContent = lesson.title;
+            document.getElementById('lessonModalIntro').textContent = lesson.intro;
+
+            const content = document.getElementById('lessonModalContent');
+            let html = '';
+            lesson.sections.forEach(sec => {
+                html += `<h3>${sec.heading}</h3>`;
+                html += `<div class="lesson-text">${sec.text}</div>`;
+                if (sec.code) {
+                    html += `<div class="lesson-code">${escapeHtml(sec.code)}</div>`;
+                }
+            });
+            if (lesson.tip) {
+                html += `<div class="lesson-tip">${lesson.tip}</div>`;
+            }
+            content.innerHTML = html;
+
+            // Update start button to open challenges for this level
+            const btn = document.getElementById('lessonStartBtn');
+            btn.onclick = () => { closeLessonModal(); openLevelChallenges(levelId); };
+
+            document.getElementById('lessonModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeLessonModal = function() {
+            document.getElementById('lessonModal').classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
+        function escapeHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        // ─── LEVEL HELPERS ─────────────────────────────
+        function isLevelUnlocked(lvl) {
+            if (lvl === 1) return true;
+            const req = DATA.config.unlockReqs[lvl];
+            if (state.xp < req.xp) return false;
+            const prevChallenges = DATA.challenges.filter(c => c.level === lvl - 1);
+            if (prevChallenges.length === 0) return true;
+            const scores = prevChallenges.map(c => state.solved[c.id]?.score || 0);
+            const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+            return avg >= req.minAvg;
+        }
+        function isLevelCompleted(lvl) {
+            const challenges = DATA.challenges.filter(c => c.level === lvl);
+            return challenges.every(c => state.solved[c.id]);
+        }
+        function getLevelProgress(lvl) {
+            const challenges = DATA.challenges.filter(c => c.level === lvl);
+            const solved = challenges.filter(c => state.solved[c.id]).length;
+            return { solved, total: challenges.length };
+        }
+        function getHighestUnlockedLevel() {
+            for (let i = DATA.levels.length; i >= 1; i--) {
+                if (isLevelUnlocked(i)) return i;
+            }
+            return 1;
+        }
+        function getDifficultyClass(lvl) {
+            if (lvl <= 3) return 'easy';
+            if (lvl <= 6) return 'medium';
+            if (lvl <= 9) return 'hard';
+            return 'boss';
+        }
+        function getDifficultyLabel(lvl) {
+            if (lvl <= 3) return 'EASY';
+            if (lvl <= 6) return 'MEDIUM';
+            if (lvl <= 9) return 'HARD';
+            return 'BOSS';
+        }
+
+        // ─── RENDER LEVELS ─────────────────────────────
+        function renderLevels() {
+            const grid = document.getElementById('levelGrid');
+            grid.innerHTML = '';
+            DATA.levels.forEach(lvl => {
+                const unlocked = isLevelUnlocked(lvl.id);
+                const completed = isLevelCompleted(lvl.id);
+                const progress = getLevelProgress(lvl.id);
+                const req = DATA.config.unlockReqs[lvl.id];
+                const diff = getDifficultyClass(lvl.id);
+                const diffLabel = getDifficultyLabel(lvl.id);
+                const hasLesson = !!DATA.lessons[lvl.id];
+
+                const card = document.createElement('div');
+                card.className = 'level-card' + (!unlocked ? ' locked' : '') + (completed ? ' completed' : '');
+                card.innerHTML = `
+                    <div class="level-header">
+                        <span class="level-icon">${lvl.icon}</span>
+                        <span class="level-badge ${unlocked ? diff : 'locked-b'}">${unlocked ? diffLabel : '🔒 LOCKED'}</span>
+                    </div>
+                    <div class="level-num">Level ${lvl.id}</div>
+                    <div class="level-name">${lvl.name}</div>
+                    <div class="level-concepts">
+                        ${lvl.concepts.map(c => `<span class="concept-tag">${c}</span>`).join('')}
+                    </div>
+                    <div class="level-progress">
+                        <span class="level-progress-text">${progress.solved}/${progress.total} solved</span>
+                        <span class="level-stars">${completed ? '⭐⭐⭐' : '☆'.repeat(progress.total - progress.solved) + '⭐'.repeat(progress.solved)}</span>
+                    </div>
+                    ${unlocked ? `
+                        <div class="level-actions">
+                            ${hasLesson ? `<button class="level-action-btn learn" onclick="event.stopPropagation(); openLessonModal(${lvl.id})">📖 LEARN</button>` : ''}
+                            <button class="level-action-btn play" onclick="event.stopPropagation(); openLevelChallenges(${lvl.id})">▶ PLAY</button>
+                        </div>
+                    ` : ''}
+                    ${!unlocked ? `<div class="level-lock-overlay"><span class="lock-icon">🔒</span><span class="lock-text">Need ${req.xp} XP</span></div>` : ''}
+                `;
+                if (unlocked) {
+                    card.addEventListener('click', () => openLevelChallenges(lvl.id));
+                }
+                grid.appendChild(card);
+            });
+        }
+
+        // ─── RENDER CHALLENGES ─────────────────────────
+        let activeLevelId = null;
+        window.openLevelChallenges = function(lvlId) {
+            activeLevelId = lvlId;
+            const lvl = DATA.levels.find(l => l.id === lvlId);
+            const panel = document.getElementById('challengesPanel');
+            const grid = document.getElementById('levelGrid');
+            const title = document.getElementById('challengesPanelTitle');
+            const list = document.getElementById('challengeList');
+
+            grid.style.display = 'none';
+            panel.classList.add('active');
+            title.textContent = `Level ${lvlId}: ${lvl.name}`;
+
+            const challenges = DATA.challenges.filter(c => c.level === lvlId);
+            list.innerHTML = '';
+            challenges.forEach(ch => {
+                const solved = state.solved[ch.id];
+                const card = document.createElement('div');
+                card.className = 'challenge-card' + (solved ? ' solved' : '');
+                card.innerHTML = `
+                    <div class="challenge-title">${solved ? '✅ ' : ''}${ch.title}</div>
+                    <div class="challenge-topic">${ch.topic} • ${ch.difficulty}</div>
+                    <div class="challenge-desc-short">${ch.description.replace(/<[^>]*>/g, '')}</div>
+                    <div class="challenge-footer">
+                        <span class="challenge-score">${solved ? `Score: ${solved.score}` : 'Not attempted'}</span>
+                        <span class="challenge-xp">+${DATA.config.xpPerLevel[ch.level]} XP</span>
+                    </div>
+                `;
+                card.addEventListener('click', () => {
+                    window.location.href = `/cpp-challenge?id=${ch.id}&mode=${state.mode}`;
+                });
+                list.appendChild(card);
+            });
+        };
+
+        window.closeChallenges = function() {
+            document.getElementById('levelGrid').style.display = 'grid';
+            document.getElementById('challengesPanel').classList.remove('active');
+            activeLevelId = null;
+        };
+
+        // ─── RENDER STATS ──────────────────────────────
+        function renderStats() {
+            const totalSolved = Object.keys(state.solved).length;
+            const totalChallenges = DATA.challenges.length;
+            document.getElementById('totalXp').textContent = state.xp;
+            document.getElementById('solvedCount').textContent = `${totalSolved} / ${totalChallenges}`;
+            document.getElementById('currentLevel').textContent = getHighestUnlockedLevel();
+            document.getElementById('streakCount').textContent = `${state.streak.count} 🔥`;
+
+            const curLvl = getHighestUnlockedLevel();
+            const nextLvl = curLvl < 10 ? curLvl + 1 : 10;
+            const nextReq = DATA.config.unlockReqs[nextLvl];
+            const prevReq = DATA.config.unlockReqs[curLvl];
+            const progress = nextLvl === curLvl ? 100 : Math.min(100, ((state.xp - prevReq.xp) / (nextReq.xp - prevReq.xp)) * 100);
+            document.getElementById('xpBar').style.width = progress + '%';
+            document.getElementById('xpLabel').textContent = `XP: ${state.xp} / ${nextReq.xp}`;
+            document.getElementById('nextLevelLabel').textContent = curLvl >= 10 ? 'MAX LEVEL!' : `Next: Level ${nextLvl}`;
+        }
+
+        // ─── RENDER ACHIEVEMENTS ───────────────────────
+        function renderAchievements() {
+            const grid = document.getElementById('achievementsGrid');
+            grid.innerHTML = '';
+            DATA.achievements.forEach(a => {
+                const earned = state.achievements.includes(a.id);
+                const card = document.createElement('div');
+                card.className = 'achievement-card' + (earned ? ' earned' : '');
+                card.innerHTML = `
+                    <span class="ach-icon">${a.icon}</span>
+                    <div class="ach-info">
+                        <div class="ach-name">${a.name}</div>
+                        <div class="ach-desc">${a.desc}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // ─── ACHIEVEMENT CHECKER ───────────────────────
+        function checkAchievements() {
+            const solved = Object.keys(state.solved).length;
+            const earn = (id) => { if (!state.achievements.includes(id)) state.achievements.push(id); };
+
+            if (solved >= 1) earn('first_solve');
+            if (solved >= 10) earn('ten_solves');
+            if (Object.values(state.solved).some(s => s.score >= 100)) earn('perfect_score');
+            if (state.streak.count >= 3) earn('streak_3');
+            if (state.streak.count >= 7) earn('streak_7');
+
+            const allLvl3 = DATA.challenges.filter(c => c.level === 3).every(c => state.solved[c.id]);
+            const allLvl6 = DATA.challenges.filter(c => c.level === 6).every(c => state.solved[c.id]);
+            const allLvl7 = DATA.challenges.filter(c => c.level === 7).every(c => state.solved[c.id]);
+            if (allLvl3) earn('loop_master');
+            if (allLvl6) earn('pointer_pro');
+            if (allLvl7) earn('oop_wizard');
+
+            for (const lvl of DATA.levels) {
+                if (isLevelCompleted(lvl.id)) { earn('level_clear'); break; }
+            }
+
+            if (Object.values(state.solved).some(s => s.time && s.time < 60)) earn('speed_demon');
+            const noHintSolves = Object.values(state.solved).filter(s => s.hints === 0).length;
+            if (noHintSolves >= 5) earn('no_hints_5');
+            const blockSolves = Object.values(state.solved).filter(s => s.mode === 'beginner').length;
+            if (blockSolves >= 3) earn('block_builder');
+            if (state.solved['l10c1']) earn('final_boss');
+            if (solved === DATA.challenges.length) earn('grand_master');
+        }
+
+        // ─── LEADERBOARD ───────────────────────────────
+        function renderLeaderboard() {
+            const tbody = document.getElementById('lbBody');
+            const fakeLeaders = [
+                { name:'CppMaster42', xp:3200, level:10, solved:21 },
+                { name:'LoopLord', xp:2800, level:9, solved:19 },
+                { name:'ByteNinja', xp:2100, level:8, solved:16 },
+                { name:'PointerQueen', xp:1600, level:7, solved:13 },
+                { name:'CodeWarrior', xp:1200, level:6, solved:10 },
+                { name:'BugHunter', xp:800, level:5, solved:8 },
+                { name:'NewbieCoder', xp:300, level:3, solved:5 }
+            ];
+            const player = { name:'YOU', xp:state.xp, level:getHighestUnlockedLevel(), solved:Object.keys(state.solved).length };
+            const all = [...fakeLeaders, player].sort((a, b) => b.xp - a.xp);
+            tbody.innerHTML = '';
+            all.forEach((entry, i) => {
+                const isYou = entry.name === 'YOU';
+                const medals = ['🥇','🥈','🥉'];
+                tbody.innerHTML += `
+                    <tr class="${isYou ? 'lb-you' : ''}">
+                        <td class="lb-rank">${medals[i] || (i + 1)}</td>
+                        <td>${isYou ? '<b style="color:#FFFFA0">YOU</b>' : entry.name}</td>
+                        <td style="color:#66ff66">${entry.xp}</td>
+                        <td>${entry.level}</td>
+                        <td>${entry.solved}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // ─── RESET ─────────────────────────────────────
+        window.resetProgress = function() {
+            if (confirm('Reset all progress? This cannot be undone!')) {
+                localStorage.removeItem(LS_KEY);
+                state = getState();
+                render();
+            }
+        };
+
+        // Close lesson modal on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLessonModal();
+        });
+
+        // ─── INITIAL RENDER ────────────────────────────
+        function render() {
+            setMode(state.mode);
+            renderStats();
+            renderLevels();
+            renderAchievements();
+            renderLeaderboard();
+        }
+        updateStreak();
+        render();
+    })();
+    </script>
+</body>
+</html>

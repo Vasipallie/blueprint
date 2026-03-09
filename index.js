@@ -2,6 +2,9 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execFile } from 'child_process';
+import { mkdtemp, writeFile, readFile, rm } from 'fs/promises';
+import { tmpdir } from 'os';
 import session from 'express-session';
 import cookieSession from 'cookie-session';
 import { createClient } from '@supabase/supabase-js';
@@ -231,6 +234,10 @@ app.route('/sponsors').get((req, res) => {
 
 app.route('/event').get((req, res) => {
     res.render('event');
+});
+
+app.route('/sim').get((req, res) => {
+    res.render('sim');
 });
 
 app.route('/atlas').get(async (req, res) => {
@@ -738,6 +745,126 @@ app.post('/admin/create-team', requireAdmin, async (req, res) => {
     } catch (error) {
         console.error('Create team failed:', error.message);
         return res.redirect('/admin/teams?create=error');
+    }
+});
+
+// ─── ARDUINO IDE ───────────────────────────────────────
+// Set ARDUINO_COMPILE_URL env var to point to a remote compile microservice
+// (needed on Vercel / serverless where arduino-cli cannot be installed)
+const ARDUINO_COMPILE_URL = process.env.ARDUINO_COMPILE_URL || '';
+
+app.get('/arduino', (req, res) => {
+    res.render('arduino-editor');
+});
+
+// Compile via remote microservice
+async function compileRemote(code, board) {
+    const resp = await fetch(ARDUINO_COMPILE_URL + '/compile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, board })
+    });
+    if (!resp.ok) throw new Error('Remote compile service returned ' + resp.status);
+    return resp.json();
+}
+
+// Compile via local arduino-cli
+async function compileLocal(code, board) {
+    const cliName = process.platform === 'win32' ? 'arduino-cli.exe' : 'arduino-cli';
+    const tmpDir = await mkdtemp(path.join(tmpdir(), 'arduino-'));
+    const sketchDir = path.join(tmpDir, 'sketch');
+    const sketchFile = path.join(sketchDir, 'sketch.ino');
+    const outputDir = path.join(tmpDir, 'output');
+
+    const { mkdir, readdir } = await import('fs/promises');
+    await mkdir(sketchDir, { recursive: true });
+    await mkdir(outputDir, { recursive: true });
+    await writeFile(sketchFile, code, 'utf-8');
+
+    const args = ['compile', '--fqbn', board, '--output-dir', outputDir, '--warnings', 'default', sketchDir];
+
+    const compileResult = await new Promise((resolve) => {
+        execFile(cliName, args, {
+            timeout: 120000,
+            maxBuffer: 1024 * 1024 * 5,
+            env: { ...process.env }
+        }, (error, stdout, stderr) => {
+            resolve({ error, stdout: String(stdout || ''), stderr: String(stderr || '') });
+        });
+    });
+
+    const output = (compileResult.stdout + '\n' + compileResult.stderr).trim();
+
+    if (compileResult.error) {
+        await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+        return { success: false, error: output || compileResult.error.message, output };
+    }
+
+    let binaryPath = null;
+    let format = 'hex';
+    const outputFiles = await readdir(outputDir);
+    for (const f of outputFiles) {
+        if (f.endsWith('.hex')) { binaryPath = path.join(outputDir, f); format = 'hex'; break; }
+        if (f.endsWith('.bin')) { binaryPath = path.join(outputDir, f); format = 'bin'; break; }
+    }
+
+    let binary = null;
+    let size = 0;
+    if (binaryPath) {
+        const binaryData = await readFile(binaryPath);
+        binary = binaryData.toString('base64');
+        size = binaryData.length;
+    }
+
+    await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    return { success: true, output, binary, format, size };
+}
+
+app.post('/api/arduino/compile', express.json({ limit: '1mb' }), async (req, res) => {
+    const code = String(req.body?.code || '');
+    const board = String(req.body?.board || 'arduino:avr:uno');
+
+    if (!code.trim()) {
+        return res.json({ success: false, error: 'No code provided' });
+    }
+
+    try {
+        // Strategy 1: Remote compile microservice (for Vercel / serverless)
+        if (ARDUINO_COMPILE_URL) {
+            const result = await compileRemote(code, board);
+            return res.json(result);
+        }
+
+        // Strategy 2: Local arduino-cli
+        const result = await compileLocal(code, board);
+        return res.json(result);
+
+    } catch (err) {
+        console.error('Compilation error:', err.message);
+
+        if (err.code === 'ENOENT') {
+            return res.json({
+                success: false,
+                error: [
+                    'arduino-cli is not installed on this server.',
+                    '',
+                    'OPTIONS:',
+                    '1. Deploy the compile microservice on Railway/Render (free)',
+                    '   then set ARDUINO_COMPILE_URL env var',
+                    '2. Install arduino-cli locally:',
+                    '   https://arduino.github.io/arduino-cli/',
+                    '   arduino-cli core install arduino:avr',
+                    '   arduino-cli core install esp32:esp32'
+                ].join('\n'),
+                output: ''
+            });
+        }
+
+        return res.json({
+            success: false,
+            error: 'Server error: ' + err.message,
+            output: ''
+        });
     }
 });
 

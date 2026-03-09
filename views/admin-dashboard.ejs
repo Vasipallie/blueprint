@@ -7,228 +7,248 @@
     <title>Atlas Admin | Blueprint</title>
     <style>
         @font-face { font-family: mcten; src: url('/resources/mc10.woff2') format('woff2'); }
-        @font-face { font-family: mc7; src: url('/resources/mc7.woff2') format('woff2'); }
+        @font-face { font-family: mc7;   src: url('/resources/mc7.woff2')  format('woff2'); }
 
         *, *::before, *::after { box-sizing: border-box; }
-
-        html, body {
-            margin: 0;
-            padding: 0;
-            min-height: 100%;
+        body, html {
+            margin:0; padding:0; height:100%;
+            overflow-x:hidden; overflow-y:auto;
             font-family: mcten, monospace;
-            background: radial-gradient(ellipse at top, #111321 0%, #040408 55%, #000000 100%);
-            color: #DDD;
+            font-size: clamp(16px, 2.5vw, 22px);
             cursor: url('/resources/crosshair-32.png') 16 16, crosshair;
+            line-height:1.4;
+            background:#0a0a0a;
+            color:#DDD;
+        }
+        a { color:#66aaff; text-decoration:none; cursor: url('/resources/crosshair-32.png') 16 16, crosshair; }
+        a:hover { color:#FFFFA0; }
+        button { cursor: url('/resources/crosshair-32.png') 16 16, crosshair; }
+
+        ::-webkit-scrollbar { width:8px; }
+        ::-webkit-scrollbar-track { background:#0a0a0a; }
+        ::-webkit-scrollbar-thumb { background:#333; border-radius:4px; }
+        ::-webkit-scrollbar-thumb:hover { background:#555; }
+
+        .bg-video {
+            position:fixed; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            min-width:100%; min-height:100%;
+            width:auto; height:auto;
+            z-index:-1; object-fit:cover; opacity:0.2;
         }
 
-        a, button { cursor: url('/resources/crosshair-32.png') 16 16, crosshair; }
+        .navbar {
+            position:fixed; top:0; left:0; right:0; height:56px;
+            background:linear-gradient(180deg,#1a1a1ae8,#0a0a0aee);
+            border-bottom:2px solid #333;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2, 0 4px 20px #0008;
+            display:flex; justify-content:space-between; align-items:center;
+            padding:0 1.5rem; z-index:100;
+        }
+        .nav-brand { display:flex; align-items:center; gap:.8rem; }
+        .nav-logo { height:36px; image-rendering:pixelated; }
+        .nav-title {
+            color:#FFFFA0; font-family:'mc7',monospace;
+            font-size:1.2rem; text-shadow:2px 2px #000A;
+            letter-spacing:.05em;
+        }
+        .nav-links { display:flex; gap:.6rem; align-items:center; }
+        .nav-btn {
+            padding:.4rem .9rem;
+            border:2px solid #444;
+            background:#3a3a3a url('/resources/bgbtn.png') center/cover;
+            image-rendering:pixelated;
+            color:#DDD; font-family:'mc7',monospace; font-size:.75rem;
+            cursor: url('/resources/crosshair-32.png') 16 16, pointer;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF5;
+            text-decoration:none; transition:all .15s;
+        }
+        .nav-btn:hover {
+            color:#FFFFA0; border-color:#FFFFA0;
+            transform:translateY(-1px);
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF5, 0 2px 8px #FFFFA033;
+        }
+        .nav-btn:active { transform:translateY(1px); }
+        .nav-btn.danger { background-image:none; background-color:rgba(160,40,40,0.85); color:#FFD2D2; }
+        .nav-btn.danger:hover { border-color:#ff6666; color:#fff; }
 
-        .page {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1.2rem;
+        .main {
+            margin-top:56px; padding:1.5rem 2rem 3rem;
+            min-height:calc(100vh - 56px);
+            max-width:1400px; margin-left:auto; margin-right:auto;
         }
 
-        .topbar,
-        .card {
-            border: 4px solid #000;
-            background: linear-gradient(145deg, rgba(20, 20, 30, 0.82), rgba(0, 0, 0, 0.8));
-            box-shadow: inset -3px -6px rgba(0, 0, 0, 0.45), inset 3px 3px rgba(255, 255, 255, 0.06);
+        .hero-banner {
+            background:linear-gradient(135deg,#1a0a2a88,#0a1a2a88);
+            border:2px solid #333;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF1, 0 4px 20px #0004;
+            padding:1.5rem 2rem; margin-bottom:1.5rem;
+            display:flex; align-items:center; gap:1.5rem;
+            border-radius:4px;
         }
-
-        .topbar {
-            padding: 1rem;
-            margin-bottom: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 0.8rem;
+        .hero-icon { font-size:3rem; }
+        .hero-text h1 {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1.3rem;
+            text-shadow:2px 2px #000A; margin:0 0 .3rem 0;
         }
+        .hero-text p { color:#AAA; font-size:.8rem; margin:0; line-height:1.5; }
+        .hero-text .email-tag { color:#90EE90; font-family:'mc7',monospace; font-size:.75rem; }
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
+        .stats-bar {
+            display:grid;
+            grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+            gap:.8rem; margin-bottom:1.5rem;
         }
-
-        .brand img {
-            width: 68px;
-            height: 68px;
-            border-radius: 999px;
-            border: 3px solid #000;
-            object-fit: cover;
+        .stat-card {
+            background:linear-gradient(180deg,#141414f0,#0e0e0ef0);
+            border:2px solid #2a2a2a;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2;
+            padding:1rem 1.2rem; text-align:center;
+            border-radius:4px; transition:border-color .2s;
         }
-
-        .title {
-            margin: 0;
-            font-family: 'mc7', monospace;
-            color: #FFFFA0;
-            text-shadow: 2px 2px #000A;
-            font-size: clamp(20px, 2.8vw, 32px);
-            letter-spacing: 0.08em;
+        .stat-card:hover { border-color:#444; }
+        .stat-label {
+            color:#777; font-family:'mc7',monospace; font-size:.65rem;
+            text-transform:uppercase; letter-spacing:.1em; margin-bottom:.3rem;
         }
-
-        .subtitle {
-            margin: 0.2rem 0 0;
-            font-family: 'mc7', monospace;
-            color: #90EE90;
-            font-size: clamp(13px, 1.7vw, 16px);
-        }
-
-        .action-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .btn {
-            border: 2px solid #000;
-            background: #999 url('/resources/bgbtn.png') center / cover;
-            color: #DDD;
-            font-family: 'mc7', monospace;
-            text-shadow: 2px 2px #000A;
-            text-decoration: none;
-            padding: 0.65rem 0.95rem;
-            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF7;
-            min-height: 46px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: border-color 0.15s ease, filter 0.15s ease;
-        }
-
-        .btn:hover,
-        .btn:focus-visible {
-            border-color: #FFFFA0;
-            filter: brightness(1.08);
-            outline: none;
-        }
-
-        .btn-danger {
-            background-image: none;
-            background-color: rgba(160, 40, 40, 0.85);
-            color: #FFD2D2;
-        }
-
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 0.8rem;
-            margin-bottom: 1rem;
-        }
-
-        .card {
-            padding: 1rem;
-        }
-
-        .kpi-label {
-            margin: 0;
-            font-family: 'mc7', monospace;
-            color: #BBB;
-            font-size: 0.82rem;
-        }
-
-        .kpi-value {
-            margin: 0.35rem 0 0;
-            font-family: 'mc7', monospace;
-            color: #FFFFA0;
-            font-size: clamp(28px, 3.5vw, 42px);
-            text-shadow: 2px 2px #000A;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 0.9rem;
+        .stat-value {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1.6rem;
+            text-shadow:2px 2px #000A;
         }
 
         .section-title {
-            margin: 0 0 0.6rem;
-            font-family: 'mc7', monospace;
-            color: #FFFFA0;
-            text-shadow: 2px 2px #000A;
-            font-size: clamp(18px, 2.2vw, 24px);
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1.1rem;
+            text-shadow:2px 2px #000A; margin:0 0 1rem 0;
         }
 
-        .description {
-            margin: 0 0 0.9rem;
-            font-family: 'mc7', monospace;
-            color: #DDD;
-            font-size: 0.84rem;
-            line-height: 1.5;
+        .action-grid {
+            display:grid;
+            grid-template-columns:repeat(auto-fill, minmax(280px,1fr));
+            gap:1rem;
         }
-
-        @media (max-width: 900px) {
-            .summary {
-                grid-template-columns: 1fr;
-            }
-
-            .action-row,
-            .btn {
-                width: 100%;
-            }
+        .action-card {
+            background:linear-gradient(180deg,#141414f0,#0a0a0af0);
+            border:2px solid #2a2a2a;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFF2;
+            padding:1.2rem; position:relative;
+            cursor: url('/resources/crosshair-32.png') 16 16, pointer;
+            transition:all .2s; border-radius:4px;
+            text-decoration:none; display:block; color:#DDD;
         }
+        .action-card:hover {
+            border-color:#FFFFA0;
+            box-shadow:inset -2px -4px #0006, inset 2px 2px #FFFFA018, 0 2px 12px #FFFFA011;
+            transform:translateY(-2px); color:#DDD;
+        }
+        .action-icon { font-size:2rem; margin-bottom:.5rem; display:block; }
+        .action-title {
+            color:#FFFFA0; font-family:'mc7',monospace; font-size:1rem;
+            text-shadow:2px 2px #000A; margin:0 0 .4rem 0;
+        }
+        .action-desc { color:#AAA; font-size:.75rem; line-height:1.5; margin:0; }
+        .action-go {
+            display:inline-block; margin-top:.8rem; padding:.35rem .8rem;
+            background:linear-gradient(180deg,#2a2a2a,#1a1a1a);
+            border:1px solid #444; color:#66ff66;
+            font-family:'mc7',monospace; font-size:.65rem;
+            border-radius:2px; transition:all .15s;
+        }
+        .action-card:hover .action-go { border-color:#66ff66; box-shadow:0 0 8px #66ff6622; }
 
+        .sim-footer {
+            text-align:center; padding:2rem 1rem; margin-top:2rem;
+            border-top:1px solid #222; color:#555; font-size:.7rem;
+        }
+        .sim-footer a { color:#66aaff; }
+
+        @media (max-width:768px) {
+            .navbar { padding:0 1rem; }
+            .nav-title { font-size:.9rem; }
+            .main { padding:1rem; }
+            .hero-banner { flex-direction:column; text-align:center; padding:1rem; }
+            .hero-icon { font-size:2rem; }
+            .action-grid { grid-template-columns:1fr; }
+            .stats-bar { grid-template-columns:1fr; }
+        }
         @media (hover: none) and (pointer: coarse) {
             html, body, a, button { cursor: auto; }
         }
     </style>
+    <link rel="icon" type="image/png" href="/resources/logo.png">
 </head>
 <body>
-    <div class="page">
-        <header class="topbar">
-            <div class="brand">
-                <img src="/resources/logo.png" alt="GIIS Robotics Logo">
-                <div>
-                    <h1 class="title">ATLAS ADMIN</h1>
-                    <p class="subtitle"><%= user.email %></p>
-                </div>
-            </div>
-            <div class="action-row">
-                <a class="btn" href="/dashboard">Team Dashboard</a>
-                <a class="btn btn-danger" href="/logout">Logout</a>
-            </div>
-        </header>
+    <video class="bg-video" autoplay muted loop playsinline>
+        <source src="https://7oaoepmc5nhfkhkk.public.blob.vercel-storage.com/bcgk.mp4" type="video/mp4">
+    </video>
 
-        <section class="summary">
-            <article class="card">
-                <p class="kpi-label">Total Teams</p>
-                <p class="kpi-value"><%= teamCount %></p>
-            </article>
-            <article class="card">
-                <p class="kpi-label">Course Articles</p>
-                <p class="kpi-value"><%= courseCount %></p>
-            </article>
-            <article class="card">
-                <p class="kpi-label">Submissions</p>
-                <p class="kpi-value"><%= submissionCount %></p>
-            </article>
-        </section>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <img src="/resources/logo.png" alt="Blueprint" class="nav-logo">
+            <span class="nav-title">ATLAS ADMIN</span>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard" class="nav-btn">📋 Dashboard</a>
+            <a href="/arduino" class="nav-btn">⚡ Arduino IDE</a>
+            <a href="/logout" class="nav-btn danger">⏏ Logout</a>
+        </div>
+    </nav>
 
-        <section class="grid">
-            <article class="card">
-                <h2 class="section-title">Teams</h2>
-                <p class="description">Create team credentials and email onboarding details.</p>
-                <a class="btn" href="/admin/teams">Open Teams</a>
-            </article>
-            <article class="card">
-                <h2 class="section-title">Courses</h2>
-                <p class="description">Build and publish course articles using rich HTML editing.</p>
-                <a class="btn" href="/admin/courses">Open Course Editor</a>
-            </article>
-            <article class="card">
-                <h2 class="section-title">Emails</h2>
-                <p class="description">Compose and send formatted updates to participants.</p>
-                <a class="btn" href="/admin/emails">Open Email Editor</a>
-            </article>
-            <article class="card">
-                <h2 class="section-title">Submissions</h2>
-                <p class="description">Review all submitted projects and resource links.</p>
-                <a class="btn" href="/admin/submissions">View Submissions</a>
-            </article>
-        </section>
-    </div>
+    <main class="main">
+        <div class="hero-banner">
+            <span class="hero-icon">🛡️</span>
+            <div class="hero-text">
+                <h1>Admin Control Panel</h1>
+                <p class="email-tag"><%= user.email %></p>
+                <p>Manage teams, courses, emails, and submissions for the Blueprint event.</p>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-label">Total Teams</div>
+                <div class="stat-value"><%= teamCount %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Course Articles</div>
+                <div class="stat-value"><%= courseCount %></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Submissions</div>
+                <div class="stat-value"><%= submissionCount %></div>
+            </div>
+        </div>
+
+        <h2 class="section-title">Quick Actions</h2>
+        <div class="action-grid">
+            <a href="/admin/teams" class="action-card">
+                <span class="action-icon">👥</span>
+                <div class="action-title">Teams</div>
+                <p class="action-desc">Create team credentials and email onboarding details.</p>
+                <span class="action-go">▶ OPEN TEAMS</span>
+            </a>
+            <a href="/admin/courses" class="action-card">
+                <span class="action-icon">📚</span>
+                <div class="action-title">Courses</div>
+                <p class="action-desc">Build and publish course articles using rich HTML editing.</p>
+                <span class="action-go">▶ OPEN EDITOR</span>
+            </a>
+            <a href="/admin/emails" class="action-card">
+                <span class="action-icon">✉️</span>
+                <div class="action-title">Emails</div>
+                <p class="action-desc">Compose and send formatted updates to participants.</p>
+                <span class="action-go">▶ OPEN EMAILS</span>
+            </a>
+            <a href="/admin/submissions" class="action-card">
+                <span class="action-icon">📦</span>
+                <div class="action-title">Submissions</div>
+                <p class="action-desc">Review all submitted projects and resource links.</p>
+                <span class="action-go">▶ VIEW ALL</span>
+            </a>
+        </div>
+
+        <div class="sim-footer">
+            Blueprint | GIIS Robotics Club &mdash; Admin Panel
+        </div>
+    </main>
 </body>
 </html>
