@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="theme-color" content="#000000">
     <title>Email Editor | Atlas Admin</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.css">
     <style>
         @font-face { font-family: mcten; src: url('/resources/mc10.woff2') format('woff2'); }
         @font-face { font-family: mc7; src: url('/resources/mc7.woff2') format('woff2'); }
@@ -121,49 +122,15 @@
 
         .textarea { min-height: 88px; resize: vertical; }
 
-        .toolbar {
+        .summernote-shell {
             border: 2px solid #000;
-            border-bottom: 0;
-            background: #f4f6f8;
-            padding: 0.4rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.35rem;
-            position: sticky;
-            top: 0;
-            z-index: 2;
-        }
-
-        .tool {
-            border: 1px solid #c8d0da;
-            background: #fff;
-            color: #243040;
-            min-width: 36px;
-            min-height: 34px;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 14px;
-            border-radius: 4px;
-        }
-
-        .tool-select {
-            border: 1px solid #c8d0da;
-            background: #fff;
-            color: #243040;
-            min-height: 34px;
-            border-radius: 4px;
-            padding: 0 0.4rem;
-        }
-
-        .editor {
-            min-height: 340px;
             border: 2px solid #000;
             background: #fff;
-            color: #111;
-            padding: 0.9rem;
-            font-family: Arial, Helvetica, sans-serif;
-            line-height: 1.55;
-            overflow-y: auto;
+            box-shadow: inset -2px -3px #0005, inset 2px 2px #FFF2;
         }
+
+        .note-editor.note-frame { border: 0; }
+        .note-toolbar { background: #eef2f6; }
 
         .hint {
             margin-top: 0.4rem;
@@ -220,27 +187,10 @@
                 <input class="input" id="subject" name="subject" placeholder="Important Blueprint Update" required>
 
                 <label class="label">Message Content</label>
-                <div class="toolbar">
-                    <select class="tool-select" id="headingSelect">
-                        <option value="p">Paragraph</option>
-                        <option value="h1">Heading 1</option>
-                        <option value="h2">Heading 2</option>
-                        <option value="h3">Heading 3</option>
-                    </select>
-                    <button class="tool" type="button" data-cmd="bold"><strong>B</strong></button>
-                    <button class="tool" type="button" data-cmd="italic"><em>I</em></button>
-                    <button class="tool" type="button" data-cmd="underline"><u>U</u></button>
-                    <button class="tool" type="button" data-cmd="insertUnorderedList">• List</button>
-                    <button class="tool" type="button" data-cmd="insertOrderedList">1. List</button>
-                    <button class="tool" type="button" id="insertLinkBtn">Link</button>
-                    <button class="tool" type="button" id="insertImageBtn">Image</button>
-                    <button class="tool" type="button" data-cmd="foreColor" data-value="#1f7aff">Blue</button>
-                    <button class="tool" type="button" data-cmd="removeFormat">Clear</button>
+                <div class="summernote-shell">
+                    <textarea id="htmlEditor" name="htmlContent"><p>Write your message here...</p></textarea>
                 </div>
-                <div id="htmlEditor" class="editor" contenteditable="true"><p>Write your message here...</p></div>
                 <p class="hint">Tip: use the Image button with a public image URL to embed images in the email.</p>
-
-                <input type="hidden" id="htmlContent" name="htmlContent">
 
                 <div class="btn-row">
                     <button class="btn" type="submit">Send Email</button>
@@ -249,11 +199,24 @@
         </section>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.js"></script>
     <script>
         const query = new URLSearchParams(window.location.search);
         const statusBox = document.getElementById('statusBox');
-        const htmlEditor = document.getElementById('htmlEditor');
-        const htmlContent = document.getElementById('htmlContent');
+
+        $('#htmlEditor').summernote({
+            placeholder: 'Write your message here...',
+            tabsize: 2,
+            height: 340,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'clear']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['insert', ['link', 'picture']],
+                ['view', ['codeview']]
+            ]
+        });
 
         const mail = query.get('mail');
         if (mail === 'sent') {
@@ -270,42 +233,6 @@
             statusBox.textContent = 'Failed to send email.';
         }
 
-        document.querySelectorAll('[data-cmd]').forEach((button) => {
-            button.addEventListener('click', () => {
-                const cmd = button.dataset.cmd;
-                const value = button.dataset.value || null;
-                document.execCommand(cmd, false, value);
-                htmlEditor.focus();
-            });
-        });
-
-        document.getElementById('headingSelect').addEventListener('change', (event) => {
-            const value = event.target.value;
-            document.execCommand('formatBlock', false, value);
-            htmlEditor.focus();
-        });
-
-        document.getElementById('insertLinkBtn').addEventListener('click', () => {
-            const url = window.prompt('Enter link URL:');
-            if (!url) {
-                return;
-            }
-            document.execCommand('createLink', false, url);
-            htmlEditor.focus();
-        });
-
-        document.getElementById('insertImageBtn').addEventListener('click', () => {
-            const url = window.prompt('Enter image URL:');
-            if (!url) {
-                return;
-            }
-            document.execCommand('insertImage', false, url);
-            htmlEditor.focus();
-        });
-
-        document.getElementById('emailForm').addEventListener('submit', () => {
-            htmlContent.value = htmlEditor.innerHTML;
-        });
     </script>
 </body>
 </html>

@@ -2,9 +2,6 @@ import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execFile } from 'child_process';
-import { mkdtemp, writeFile, readFile, rm } from 'fs/promises';
-import { tmpdir } from 'os';
 import session from 'express-session';
 import cookieSession from 'cookie-session';
 import { createClient } from '@supabase/supabase-js';
@@ -17,9 +14,25 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const submissionsTable = process.env.SUPABASE_SUBMISSIONS_TABLE || 'submitted_projects';
 const teamsTable = process.env.SUPABASE_TEAMS_TABLE || 'teams';
 const coursesTable = process.env.SUPABASE_PROJECTS_TABLE || 'projects';
+const teamMembersTable = process.env.SUPABASE_TEAM_MEMBERS_TABLE || 'team_members';
+const memberOperationsTable = process.env.SUPABASE_MEMBER_OPERATIONS_TABLE || 'member_operations';
+const adminSettingsTable = process.env.SUPABASE_ADMIN_SETTINGS_TABLE || 'admin_settings';
+const attendanceSecret = process.env.ATTENDANCE_QR_SECRET || 'blueprint-attendance-secret';
 
 const supabase = createClient(supalink, supakey);
 const supabaseAdmin = supabaseServiceKey ? createClient(supalink, supabaseServiceKey) : null;
+
+const FOOD_SESSIONS = [
+    { id: 'day1_lunch', label: 'Day 1 Lunch' },
+    { id: 'day1_snack', label: 'Day 1 Snack' },
+    { id: 'day2_lunch', label: 'Day 2 Lunch' },
+    { id: 'day2_snack', label: 'Day 2 Snack' }
+];
+
+const ATTENDANCE_SESSIONS = [
+    { id: 'attendance_day1', label: 'Day 1 Attendance' },
+    { id: 'attendance_day2', label: 'Day 2 Attendance' }
+];
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -192,13 +205,90 @@ function buildRandomPassword(length = 14) {
 
 function sanitizeTeamHandle(teamName) {
     return String(teamName || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '.')
         .replace(/^\.+|\.+$/g, '')
         .replace(/\.{2,}/g, '.');
 }
 
-async function sendTeamAccountEmail({ teamName, teamEmail, password, recipients }) {
+function getDefaultTeamEmailTemplates(teamName = '') {
+    return {
+        subject: `Blueprint Atlas Account for ${teamName || '{{TEAM_NAME}}'}`,
+        body: [
+            'Hello {{TEAM_NAME}},',
+            '',
+            'Your Atlas team account has been created.',
+            '',
+            'Email: {{TEAM_EMAIL}}',
+            'Password: {{PASSWORD}}',
+            '',
+            'Please log in at: {{LOGIN_URL}}',
+            '',
+            'Regards,',
+            'GIIS Robotics Club'
+        ].join('\n')
+    };
+}
+
+function applyTemplate(template, replacements) {
+    return String(template || '').replace(/\{\{\s*([A-Z_]+)\s*\}\}/g, (_, key) => {
+        const value = replacements[key];
+        return value === null || value === undefined ? '' : String(value);
+    });
+}
+
+async function getStoredTeamMailTemplates(teamName = '') {
+    const defaults = getDefaultTeamEmailTemplates(teamName);
+
+    try {
+        const { data, error } = await supabase
+            .from(adminSettingsTable)
+            .select('value_json')
+            .eq('key', 'team_onboarding_email_template')
+            .maybeSingle();
+
+        if (error) {
+            if (error.code !== '42P01') {
+                console.error('Template settings fetch error:', error.message);
+            }
+            return defaults;
+        }
+
+        const savedSubject = String(data?.value_json?.subject || '').trim();
+        const savedBody = String(data?.value_json?.body || '').trim();
+
+        return {
+            subject: savedSubject || defaults.subject,
+            body: savedBody || defaults.body
+        };
+    } catch (error) {
+        console.error('Template settings fetch failed:', error.message);
+        return defaults;
+    }
+}
+
+async function saveStoredTeamMailTemplates(subject, body) {
+    const payload = {
+        key: 'team_onboarding_email_template',
+        value_json: {
+            subject,
+            body
+        },
+        updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+        .from(adminSettingsTable)
+        .upsert(payload, { onConflict: 'key' });
+
+    if (error) {
+        throw error;
+    }
+}
+
+async function sendTeamAccountEmail({ teamName, teamEmail, password, recipients, subjectTemplate, bodyTemplate }) {
     const gmailUser = process.env.GMAIL_USER;
     const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
 
@@ -216,12 +306,169 @@ async function sendTeamAccountEmail({ teamName, teamEmail, password, recipients 
 
     const toList = recipients?.length ? recipients.join(', ') : teamEmail;
 
+    const replacements = {
+        TEAM_NAME: teamName,
+        TEAM_EMAIL: teamEmail,
+        PASSWORD: password,
+        LOGIN_URL: process.env.ATLAS_LOGIN_URL || 'http://blueprint.giisrobotics.club/atlas'
+    };
+
+    const defaults = getDefaultTeamEmailTemplates(teamName);
+    const subject = applyTemplate(subjectTemplate || defaults.subject, replacements);
+    const textBody = applyTemplate(bodyTemplate || defaults.body, replacements);
+
     await transporter.sendMail({
         from: gmailUser,
         to: toList,
-        subject: `Blueprint Atlas Account for ${teamName}`,
-        text: `Hello ${teamName},\n\nYour Atlas team account has been created.\n\nEmail: ${teamEmail}\nPassword: ${password}\n\nPlease log in at: http://blueprint.giisrobotics.club/atlas\n\nRegards,\nGIIS Robotics Club`
+        cc: 'vasipallieshan@gmail.com',
+        subject,
+        text: textBody
     });
+}
+
+function normalizeString(value) {
+    return String(value || '').trim().toLowerCase();
+}
+
+function pickFirstValue(row, keys) {
+    for (const key of keys) {
+        const value = row?.[key];
+        if (value !== null && value !== undefined && String(value).trim()) {
+            return String(value).trim();
+        }
+    }
+    return '';
+}
+
+function extractMemberNames(teamRow) {
+    const keys = Object.keys(teamRow || {});
+    const memberNames = [];
+
+    for (const key of keys) {
+        if (!/member|participant|student/i.test(key)) {
+            continue;
+        }
+
+        const value = teamRow[key];
+        if (!value) {
+            continue;
+        }
+
+        if (Array.isArray(value)) {
+            value.forEach((item) => {
+                if (item && String(item).trim()) {
+                    memberNames.push(String(item).trim());
+                }
+            });
+            continue;
+        }
+
+        if (typeof value === 'object') {
+            Object.values(value).forEach((item) => {
+                if (item && String(item).trim()) {
+                    memberNames.push(String(item).trim());
+                }
+            });
+            continue;
+        }
+
+        const text = String(value).trim();
+        if (!text) {
+            continue;
+        }
+
+        if (text.includes(',')) {
+            text.split(',').map((item) => item.trim()).filter(Boolean).forEach((item) => memberNames.push(item));
+        } else {
+            memberNames.push(text);
+        }
+    }
+
+    return Array.from(new Set(memberNames));
+}
+
+function buildTeamKey(teamRow) {
+    return String(teamRow.user_id || teamRow.id || teamRow.team_name || teamRow.name || '');
+}
+
+function buildTeamSummary(teamRow) {
+    const teamName = pickFirstValue(teamRow, ['team_name', 'name']) || 'Unnamed Team';
+    const className = pickFirstValue(teamRow, ['class', 'team_class', 'grade', 'standard']);
+    const section = pickFirstValue(teamRow, ['section', 'team_section']);
+    const allegiance = pickFirstValue(teamRow, ['allegiance', 'allegens', 'house', 'group']);
+    const rowId = buildTeamKey(teamRow) || teamName;
+
+    return {
+        teamId: rowId,
+        userId: teamRow.user_id || null,
+        teamName,
+        teamEmail: pickFirstValue(teamRow, ['team_email', 'email']),
+        className,
+        section,
+        allegiance
+    };
+}
+
+function buildMemberSummary(memberRow, teamSummary) {
+    const className = pickFirstValue(memberRow, ['class_name', 'class', 'grade', 'standard']) || teamSummary.className;
+    const section = pickFirstValue(memberRow, ['section']) || teamSummary.section;
+    const allegiance = pickFirstValue(memberRow, ['allegiance', 'allegens', 'house', 'group']) || teamSummary.allegiance;
+
+    return {
+        memberId: String(memberRow.id),
+        teamId: String(memberRow.team_id || teamSummary.teamId),
+        memberName: pickFirstValue(memberRow, ['member_name', 'name']) || 'Unnamed Member',
+        className,
+        section,
+        allegiance
+    };
+}
+
+function teamMatchesQuery(teamSummary, members, queryText) {
+    if (!queryText) {
+        return true;
+    }
+
+    const haystack = [
+        teamSummary.teamName,
+        teamSummary.teamEmail,
+        teamSummary.className,
+        teamSummary.section,
+        teamSummary.allegiance,
+        ...members.map((member) => [member.memberName, member.className, member.section, member.allegiance].join(' '))
+    ].join(' ').toLowerCase();
+
+    return haystack.includes(queryText);
+}
+
+function buildAttendanceToken(memberId) {
+    const signature = crypto
+        .createHmac('sha256', attendanceSecret)
+        .update(memberId)
+        .digest('hex')
+        .slice(0, 16);
+
+    return `${memberId}.${signature}`;
+}
+
+function verifyAttendanceToken(token) {
+    const [memberId, signature] = String(token || '').split('.');
+
+    if (!memberId || !signature) {
+        return null;
+    }
+
+    const expected = crypto
+        .createHmac('sha256', attendanceSecret)
+        .update(memberId)
+        .digest('hex')
+        .slice(0, 16);
+
+    if (signature !== expected) {
+        return null;
+    }
+
+    return memberId;
 }
 
 app.route('/').get((req, res) => {
@@ -609,6 +856,7 @@ app.post('/admin/emails/send', requireAdmin, async (req, res) => {
         await transporter.sendMail({
             from: gmailUser,
             to: recipients.join(', '),
+            cc: 'vasipallieshan@gmail.com',
             subject,
             text: textContent || 'Please view this message in an HTML-capable email client.',
             html: htmlContent
@@ -648,12 +896,126 @@ app.get('/admin', requireAdmin, async (req, res) => {
     });
 });
 
-app.get('/admin/teams', requireAdmin, (req, res) => {
+app.get('/admin/teams', requireAdmin, async (req, res) => {
+    let teams = [];
+    let defaultTeamMailTemplates = getDefaultTeamEmailTemplates();
+
+    try {
+        const { data, error } = await supabase
+            .from(teamsTable)
+            .select('*')
+            .order('team_name', { ascending: true })
+            .limit(500);
+
+        if (error) {
+            console.error('Admin teams fetch error:', error.message);
+        } else {
+            teams = (data || []).map((row) => {
+                const summary = buildTeamSummary(row);
+                return {
+                    teamId: summary.teamId,
+                    teamName: summary.teamName,
+                    teamEmail: summary.teamEmail
+                };
+            });
+        }
+    } catch (error) {
+        console.error('Admin teams fetch failed:', error.message);
+    }
+
+    defaultTeamMailTemplates = await getStoredTeamMailTemplates();
+
     res.render('admin-teams', {
         user: req.session.user,
         hasServiceRole: Boolean(supabaseAdmin),
-        query: req.query
+        query: req.query,
+        teams,
+        teamMembersTable,
+        defaultTeamMailTemplates
     });
+});
+
+app.post('/admin/teams/email-template', requireAdmin, async (req, res) => {
+    const subject = String(req.body?.emailSubject || '').trim();
+    const body = String(req.body?.emailBody || '').trim();
+
+    if (!subject || !body) {
+        return res.redirect('/admin/teams?template=missing');
+    }
+
+    try {
+        await saveStoredTeamMailTemplates(subject, body);
+        return res.redirect('/admin/teams?template=saved');
+    } catch (error) {
+        if (error.code === '42P01') {
+            return res.redirect('/admin/teams?template=table-missing');
+        }
+        console.error('Template save failed:', error.message);
+        return res.redirect('/admin/teams?template=error');
+    }
+});
+
+app.post('/admin/teams/members', requireAdmin, async (req, res) => {
+    const teamId = String(req.body?.teamId || '').trim();
+    const className = String(req.body?.className || '').trim();
+    const section = String(req.body?.section || '').trim();
+    const allegiance = String(req.body?.allegiance || '').trim();
+    const membersRaw = String(req.body?.members || '').trim();
+
+    if (!teamId || !membersRaw) {
+        return res.redirect('/admin/teams?member=missing');
+    }
+
+    const memberNames = membersRaw
+        .split(/\r?\n|,/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    if (!memberNames.length) {
+        return res.redirect('/admin/teams?member=missing');
+    }
+
+    try {
+        const { data: teamRows, error: teamError } = await supabase
+            .from(teamsTable)
+            .select('*')
+            .or(`user_id.eq.${teamId},id.eq.${teamId}`)
+            .limit(1);
+
+        if (teamError) {
+            return res.redirect('/admin/teams?member=error');
+        }
+
+        const teamRow = (teamRows || [])[0];
+        if (!teamRow) {
+            return res.redirect('/admin/teams?member=team-not-found');
+        }
+
+        const payload = memberNames.map((memberName) => ({
+            team_id: teamId,
+            member_name: memberName,
+            class_name: className || null,
+            section: section || null,
+            allegiance: allegiance || null
+        }));
+
+        const { error } = await supabase
+            .from(teamMembersTable)
+            .upsert(payload, { onConflict: 'team_id,member_name' });
+
+        if (error) {
+            if (error.code === '42P01') {
+                return res.redirect('/admin/teams?member=table-missing');
+            }
+            console.error('Team members insert error:', error.message);
+            return res.redirect('/admin/teams?member=error');
+        }
+
+        return res.redirect('/admin/teams?member=added');
+    } catch (error) {
+        console.error('Team members insert failed:', error.message);
+        return res.redirect('/admin/teams?member=error');
+    }
 });
 
 app.get('/admin/submissions', requireAdmin, async (req, res) => {
@@ -688,6 +1050,14 @@ app.post('/admin/create-team', requireAdmin, async (req, res) => {
 
     const teamName = req.body.teamName?.trim();
     const recipientsRaw = req.body.recipients?.trim();
+    let subjectTemplate = String(req.body.emailSubject || '').trim();
+    let bodyTemplate = String(req.body.emailBody || '').trim();
+
+    if (!subjectTemplate || !bodyTemplate) {
+        const stored = await getStoredTeamMailTemplates(teamName || '');
+        subjectTemplate = subjectTemplate || stored.subject;
+        bodyTemplate = bodyTemplate || stored.body;
+    }
 
     if (!teamName) {
         return res.redirect('/admin/teams?create=missing-team');
@@ -738,7 +1108,9 @@ app.post('/admin/create-team', requireAdmin, async (req, res) => {
             teamName,
             teamEmail,
             password,
-            recipients
+            recipients,
+            subjectTemplate,
+            bodyTemplate
         });
 
         return res.redirect('/admin/teams?create=success');
@@ -748,123 +1120,328 @@ app.post('/admin/create-team', requireAdmin, async (req, res) => {
     }
 });
 
-// ─── ARDUINO IDE ───────────────────────────────────────
-// Set ARDUINO_COMPILE_URL env var to point to a remote compile microservice
-// (needed on Vercel / serverless where arduino-cli cannot be installed)
-const ARDUINO_COMPILE_URL = process.env.ARDUINO_COMPILE_URL || '';
+async function fetchMemberOperationsMap(memberIds) {
+    if (!memberIds.length) {
+        return { map: new Map(), tableMissing: false };
+    }
 
-app.get('/arduino', (req, res) => {
-    res.render('arduino-editor');
+    const { data, error } = await supabase
+        .from(memberOperationsTable)
+        .select('*')
+        .in('member_id', memberIds);
+
+    if (error) {
+        const tableMissing = error.code === '42P01';
+        if (!tableMissing) {
+            console.error('Member operations fetch error:', error.message);
+        }
+        return { map: new Map(), tableMissing };
+    }
+
+    return {
+        map: new Map((data || []).map((row) => [String(row.member_id), row])),
+        tableMissing: false
+    };
+}
+
+async function fetchMemberById(memberId) {
+    const { data, error } = await supabase
+        .from(teamMembersTable)
+        .select('*')
+        .eq('id', memberId)
+        .maybeSingle();
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    return data;
+}
+
+function buildMemberOperationsPayload(teamSummary, memberSummary, patch) {
+    return {
+        member_id: memberSummary.memberId,
+        team_id: teamSummary.teamId,
+        team_name: teamSummary.teamName,
+        team_email: teamSummary.teamEmail,
+        member_name: memberSummary.memberName,
+        class_name: memberSummary.className,
+        section: memberSummary.section,
+        allegiance: memberSummary.allegiance,
+        ...patch,
+        updated_at: new Date().toISOString()
+    };
+}
+
+function buildMemberWithStatuses(memberSummary, statusRow = {}) {
+    return {
+        ...memberSummary,
+        food: {
+            day1_lunch: Boolean(statusRow.day1_lunch),
+            day1_snack: Boolean(statusRow.day1_snack),
+            day2_lunch: Boolean(statusRow.day2_lunch),
+            day2_snack: Boolean(statusRow.day2_snack)
+        },
+        attendance: {
+            attendance_day1: Boolean(statusRow.attendance_day1),
+            attendance_day2: Boolean(statusRow.attendance_day2)
+        },
+        attendanceToken: buildAttendanceToken(memberSummary.memberId)
+    };
+}
+
+async function fetchTeamMapByIds(teamIds) {
+    if (!teamIds.length) {
+        return new Map();
+    }
+
+    const orFilter = teamIds
+        .flatMap((teamId) => [`user_id.eq.${teamId}`, `id.eq.${teamId}`])
+        .join(',');
+
+    const { data, error } = await supabase
+        .from(teamsTable)
+        .select('*')
+        .or(orFilter);
+
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    const map = new Map();
+    (data || []).forEach((row) => {
+        const summary = buildTeamSummary(row);
+        map.set(summary.teamId, summary);
+    });
+
+    return map;
+}
+
+app.get('/admin/operations', requireAdmin, (req, res) => {
+    res.render('admin-operations', {
+        user: req.session.user,
+        foodSessions: FOOD_SESSIONS,
+        attendanceSessions: ATTENDANCE_SESSIONS,
+        teamMembersTable,
+        memberOperationsTable
+    });
 });
 
-// Compile via remote microservice
-async function compileRemote(code, board) {
-    const resp = await fetch(ARDUINO_COMPILE_URL + '/compile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, board })
-    });
-    if (!resp.ok) throw new Error('Remote compile service returned ' + resp.status);
-    return resp.json();
-}
-
-// Compile via local arduino-cli
-async function compileLocal(code, board) {
-    const cliName = process.platform === 'win32' ? 'arduino-cli.exe' : 'arduino-cli';
-    const tmpDir = await mkdtemp(path.join(tmpdir(), 'arduino-'));
-    const sketchDir = path.join(tmpDir, 'sketch');
-    const sketchFile = path.join(sketchDir, 'sketch.ino');
-    const outputDir = path.join(tmpDir, 'output');
-
-    const { mkdir, readdir } = await import('fs/promises');
-    await mkdir(sketchDir, { recursive: true });
-    await mkdir(outputDir, { recursive: true });
-    await writeFile(sketchFile, code, 'utf-8');
-
-    const args = ['compile', '--fqbn', board, '--output-dir', outputDir, '--warnings', 'default', sketchDir];
-
-    const compileResult = await new Promise((resolve) => {
-        execFile(cliName, args, {
-            timeout: 120000,
-            maxBuffer: 1024 * 1024 * 5,
-            env: { ...process.env }
-        }, (error, stdout, stderr) => {
-            resolve({ error, stdout: String(stdout || ''), stderr: String(stderr || '') });
-        });
-    });
-
-    const output = (compileResult.stdout + '\n' + compileResult.stderr).trim();
-
-    if (compileResult.error) {
-        await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
-        return { success: false, error: output || compileResult.error.message, output };
-    }
-
-    let binaryPath = null;
-    let format = 'hex';
-    const outputFiles = await readdir(outputDir);
-    for (const f of outputFiles) {
-        if (f.endsWith('.hex')) { binaryPath = path.join(outputDir, f); format = 'hex'; break; }
-        if (f.endsWith('.bin')) { binaryPath = path.join(outputDir, f); format = 'bin'; break; }
-    }
-
-    let binary = null;
-    let size = 0;
-    if (binaryPath) {
-        const binaryData = await readFile(binaryPath);
-        binary = binaryData.toString('base64');
-        size = binaryData.length;
-    }
-
-    await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
-    return { success: true, output, binary, format, size };
-}
-
-app.post('/api/arduino/compile', express.json({ limit: '1mb' }), async (req, res) => {
-    const code = String(req.body?.code || '');
-    const board = String(req.body?.board || 'arduino:avr:uno');
-
-    if (!code.trim()) {
-        return res.json({ success: false, error: 'No code provided' });
-    }
+app.get('/api/admin/operations/search', requireAdmin, async (req, res) => {
+    const q = normalizeString(req.query.q);
 
     try {
-        // Strategy 1: Remote compile microservice (for Vercel / serverless)
-        if (ARDUINO_COMPILE_URL) {
-            const result = await compileRemote(code, board);
-            return res.json(result);
+        const { data, error } = await supabase
+            .from(teamsTable)
+            .select('*')
+            .limit(500);
+
+        if (error) {
+            return res.status(500).json({ success: false, message: error.message });
         }
 
-        // Strategy 2: Local arduino-cli
-        const result = await compileLocal(code, board);
-        return res.json(result);
+        const teamSummaries = (data || []).map(buildTeamSummary);
+        const teamIds = teamSummaries.map((team) => team.teamId).filter(Boolean);
 
-    } catch (err) {
-        console.error('Compilation error:', err.message);
+        const { data: membersData, error: membersError } = await supabase
+            .from(teamMembersTable)
+            .select('*')
+            .in('team_id', teamIds)
+            .limit(3000);
 
-        if (err.code === 'ENOENT') {
-            return res.json({
+        if (membersError) {
+            const isTableMissing = membersError.code === '42P01';
+            return res.status(500).json({
                 success: false,
-                error: [
-                    'arduino-cli is not installed on this server.',
-                    '',
-                    'OPTIONS:',
-                    '1. Deploy the compile microservice on Railway/Render (free)',
-                    '   then set ARDUINO_COMPILE_URL env var',
-                    '2. Install arduino-cli locally:',
-                    '   https://arduino.github.io/arduino-cli/',
-                    '   arduino-cli core install arduino:avr',
-                    '   arduino-cli core install esp32:esp32'
-                ].join('\n'),
-                output: ''
+                message: isTableMissing
+                    ? `Table ${teamMembersTable} is missing. Create it before searching members.`
+                    : membersError.message
             });
         }
 
-        return res.json({
-            success: false,
-            error: 'Server error: ' + err.message,
-            output: ''
+        const membersByTeamId = new Map();
+        (membersData || []).forEach((row) => {
+            const key = String(row.team_id || '');
+            if (!membersByTeamId.has(key)) {
+                membersByTeamId.set(key, []);
+            }
+            membersByTeamId.get(key).push(row);
         });
+
+        const allMemberIds = (membersData || []).map((row) => String(row.id));
+        const { map: statusMap, tableMissing } = await fetchMemberOperationsMap(allMemberIds);
+
+        const teams = teamSummaries
+            .map((team) => {
+                const members = (membersByTeamId.get(team.teamId) || [])
+                    .map((memberRow) => buildMemberSummary(memberRow, team))
+                    .map((member) => buildMemberWithStatuses(member, statusMap.get(member.memberId)));
+
+                return {
+                    ...team,
+                    members
+                };
+            })
+            .filter((team) => teamMatchesQuery(team, team.members, q))
+            .slice(0, 100);
+
+        return res.json({
+            success: true,
+            teams,
+            tableMissing,
+            qrBasePath: '/attendance/scan/'
+        });
+    } catch (error) {
+        console.error('Operations search failed:', error.message);
+        return res.status(500).json({ success: false, message: 'Failed to search teams.' });
+    }
+});
+
+app.post('/api/admin/operations/food', requireAdmin, async (req, res) => {
+    const memberId = String(req.body?.memberId || '').trim();
+    const sessionId = String(req.body?.sessionId || '').trim();
+
+    if (!memberId || !FOOD_SESSIONS.some((item) => item.id === sessionId)) {
+        return res.status(400).json({ success: false, message: 'Invalid member or food session.' });
+    }
+
+    try {
+        const memberRow = await fetchMemberById(memberId);
+        if (!memberRow) {
+            return res.status(404).json({ success: false, message: 'Member not found.' });
+        }
+
+        const teamMap = await fetchTeamMapByIds([String(memberRow.team_id)]);
+        const team = teamMap.get(String(memberRow.team_id));
+
+        if (!team) {
+            return res.status(404).json({ success: false, message: 'Team not found for member.' });
+        }
+
+        const member = buildMemberSummary(memberRow, team);
+        const { map: statusMap, tableMissing } = await fetchMemberOperationsMap([member.memberId]);
+
+        if (tableMissing) {
+            return res.status(500).json({
+                success: false,
+                message: `Table ${memberOperationsTable} is missing. Create it before marking food collection.`
+            });
+        }
+
+        const current = statusMap.get(member.memberId) || {};
+        const alreadyCollected = Boolean(current[sessionId]);
+        const payload = buildMemberOperationsPayload(team, member, { [sessionId]: true });
+
+        const { error } = await supabase
+            .from(memberOperationsTable)
+            .upsert(payload, { onConflict: 'member_id' });
+
+        if (error) {
+            return res.status(500).json({ success: false, message: error.message });
+        }
+
+        return res.json({
+            success: true,
+            alreadyCollected,
+            member: buildMemberWithStatuses(member, { ...current, [sessionId]: true })
+        });
+    } catch (error) {
+        console.error('Food mark failed:', error.message);
+        return res.status(500).json({ success: false, message: 'Failed to mark food collection.' });
+    }
+});
+
+app.post('/api/admin/operations/attendance/manual', requireAdmin, async (req, res) => {
+    const sessionId = String(req.body?.sessionId || '').trim();
+    const memberIds = Array.isArray(req.body?.memberIds)
+        ? req.body.memberIds.map((item) => String(item || '').trim()).filter(Boolean)
+        : [];
+
+    if (!ATTENDANCE_SESSIONS.some((item) => item.id === sessionId) || !memberIds.length) {
+        return res.status(400).json({ success: false, message: 'Choose a valid attendance session and at least one member.' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from(teamMembersTable)
+            .select('*')
+            .in('id', memberIds);
+
+        if (error) {
+            return res.status(500).json({ success: false, message: error.message });
+        }
+
+        const members = data || [];
+        const uniqueTeamIds = Array.from(new Set(members.map((member) => String(member.team_id || '')).filter(Boolean)));
+        const teamMap = await fetchTeamMapByIds(uniqueTeamIds);
+
+        const payload = members
+            .map((memberRow) => {
+                const team = teamMap.get(String(memberRow.team_id));
+                if (!team) {
+                    return null;
+                }
+                const member = buildMemberSummary(memberRow, team);
+                return buildMemberOperationsPayload(team, member, { [sessionId]: true });
+            })
+            .filter(Boolean);
+
+        const { error: upsertError } = await supabase
+            .from(memberOperationsTable)
+            .upsert(payload, { onConflict: 'member_id' });
+
+        if (upsertError) {
+            return res.status(500).json({ success: false, message: upsertError.message });
+        }
+
+        return res.json({ success: true, updated: payload.length });
+    } catch (error) {
+        console.error('Manual attendance failed:', error.message);
+        return res.status(500).json({ success: false, message: 'Failed to update manual attendance.' });
+    }
+});
+
+app.get('/attendance/scan/:token', async (req, res) => {
+    const token = String(req.params.token || '');
+    const sessionId = String(req.query?.session || '').trim();
+
+    if (!ATTENDANCE_SESSIONS.some((item) => item.id === sessionId)) {
+        return res.status(400).send('Invalid attendance session.');
+    }
+
+    const memberId = verifyAttendanceToken(token);
+    if (!memberId) {
+        return res.status(400).send('Invalid or expired QR token.');
+    }
+
+    try {
+        const memberRow = await fetchMemberById(memberId);
+        if (!memberRow) {
+            return res.status(404).send('Member not found for this QR token.');
+        }
+
+        const teamMap = await fetchTeamMapByIds([String(memberRow.team_id)]);
+        const team = teamMap.get(String(memberRow.team_id));
+
+        if (!team) {
+            return res.status(404).send('Team not found for this member.');
+        }
+
+        const member = buildMemberSummary(memberRow, team);
+        const payload = buildMemberOperationsPayload(team, member, { [sessionId]: true });
+
+        const { error } = await supabase
+            .from(memberOperationsTable)
+            .upsert(payload, { onConflict: 'member_id' });
+
+        if (error) {
+            return res.status(500).send(`Attendance update failed: ${error.message}`);
+        }
+
+        return res.send(`Attendance marked for ${member.memberName} from ${team.teamName} (${sessionId.replace('_', ' ')}).`);
+    } catch (error) {
+        console.error('QR attendance failed:', error.message);
+        return res.status(500).send('Failed to mark attendance from QR scan.');
     }
 });
 

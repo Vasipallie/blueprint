@@ -155,6 +155,57 @@
         }
         .action-card:hover .action-go { border-color:#66ff66; box-shadow:0 0 8px #66ff6622; }
 
+        .scanner-wrap {
+            margin-top: 1.3rem;
+            background: linear-gradient(180deg,#121212f0,#0a0a0af0);
+            border: 2px solid #2a2a2a;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #FFF2;
+            border-radius: 4px;
+            padding: 1rem;
+        }
+
+        .scanner-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1rem;
+            align-items: start;
+        }
+
+        #qrReader {
+            width: 100%;
+            min-height: 260px;
+            border: 2px solid #333;
+            background: #080808;
+            padding: 0.25rem;
+        }
+
+        .scanner-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.7rem;
+        }
+
+        .scanner-status {
+            border: 2px solid #2a2a2a;
+            background: rgba(0,0,0,0.35);
+            padding: .65rem .75rem;
+            font-family: 'mc7', monospace;
+            font-size: .7rem;
+            color: #DDD;
+            min-height: 48px;
+        }
+
+        .scanner-status.ok { color: #90EE90; border-color: #2a5a2a; }
+        .scanner-status.err { color: #ff8c8c; border-color: #5a2a2a; }
+        .scanner-result {
+            margin-top: .6rem;
+            font-family: 'mc7', monospace;
+            font-size: .68rem;
+            color: #66aaff;
+            word-break: break-all;
+        }
+
         .sim-footer {
             text-align:center; padding:2rem 1rem; margin-top:2rem;
             border-top:1px solid #222; color:#555; font-size:.7rem;
@@ -169,6 +220,7 @@
             .hero-icon { font-size:2rem; }
             .action-grid { grid-template-columns:1fr; }
             .stats-bar { grid-template-columns:1fr; }
+            .scanner-grid { grid-template-columns: 1fr; }
         }
         @media (hover: none) and (pointer: coarse) {
             html, body, a, button { cursor: auto; }
@@ -188,7 +240,6 @@
         </div>
         <div class="nav-links">
             <a href="/dashboard" class="nav-btn">📋 Dashboard</a>
-            <a href="/arduino" class="nav-btn">⚡ Arduino IDE</a>
             <a href="/logout" class="nav-btn danger">⏏ Logout</a>
         </div>
     </nav>
@@ -244,11 +295,142 @@
                 <p class="action-desc">Review all submitted projects and resource links.</p>
                 <span class="action-go">▶ VIEW ALL</span>
             </a>
+            <a href="/admin/operations" class="action-card">
+                <span class="action-icon">🍱</span>
+                <div class="action-title">Food and Attendance</div>
+                <p class="action-desc">Search teams or members, mark food sessions, and track attendance with manual sheet or QR.</p>
+                <span class="action-go">▶ OPEN OPS</span>
+            </a>
         </div>
+
+        <section class="scanner-wrap">
+            <h2 class="section-title">QR Scanner</h2>
+            <div class="scanner-grid">
+                <div id="qrReader"></div>
+                <div>
+                    <div class="scanner-actions">
+                        <button class="nav-btn" type="button" id="startScanBtn">Start Scan</button>
+                        <button class="nav-btn" type="button" id="stopScanBtn">Stop Scan</button>
+                    </div>
+                    <div id="scannerStatus" class="scanner-status">Scan attendance QR here. If it contains an attendance URL, this dashboard will call it immediately.</div>
+                    <div id="scannerResult" class="scanner-result"></div>
+                </div>
+            </div>
+        </section>
 
         <div class="sim-footer">
             Blueprint | GIIS Robotics Club &mdash; Admin Panel
         </div>
     </main>
+
+    <script src="https://unpkg.com/html5-qrcode" defer></script>
+    <script>
+        const startScanBtn = document.getElementById('startScanBtn');
+        const stopScanBtn = document.getElementById('stopScanBtn');
+        const scannerStatus = document.getElementById('scannerStatus');
+        const scannerResult = document.getElementById('scannerResult');
+
+        let qrScanner = null;
+        let scannerRunning = false;
+        let lastScan = '';
+
+        function setScannerStatus(message, type = '') {
+            scannerStatus.className = 'scanner-status';
+            if (type) {
+                scannerStatus.classList.add(type);
+            }
+            scannerStatus.textContent = message;
+        }
+
+        function normalizeScanTarget(text) {
+            const raw = String(text || '').trim();
+            if (!raw) {
+                return '';
+            }
+
+            if (raw.startsWith('http://') || raw.startsWith('https://')) {
+                return raw;
+            }
+
+            if (raw.startsWith('/')) {
+                return window.location.origin + raw;
+            }
+
+            return raw;
+        }
+
+        async function handleScan(decodedText) {
+            const normalized = normalizeScanTarget(decodedText);
+
+            if (!normalized || normalized === lastScan) {
+                return;
+            }
+
+            lastScan = normalized;
+            scannerResult.textContent = normalized;
+
+            if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+                try {
+                    const response = await fetch(normalized, { method: 'GET' });
+                    const body = await response.text();
+                    if (response.ok) {
+                        setScannerStatus(body || 'QR URL executed successfully.', 'ok');
+                    } else {
+                        setScannerStatus('QR request failed: ' + body, 'err');
+                    }
+                } catch (error) {
+                    setScannerStatus('Failed to call scanned URL: ' + error.message, 'err');
+                }
+            } else {
+                setScannerStatus('QR scanned, but not a URL. Copy value from result panel.', 'err');
+            }
+        }
+
+        async function startScanner() {
+            if (scannerRunning) {
+                return;
+            }
+
+            if (typeof Html5Qrcode === 'undefined') {
+                setScannerStatus('Scanner library failed to load. Refresh and try again.', 'err');
+                return;
+            }
+
+            if (!qrScanner) {
+                qrScanner = new Html5Qrcode('qrReader');
+            }
+
+            try {
+                await qrScanner.start(
+                    { facingMode: 'environment' },
+                    { fps: 10, qrbox: { width: 220, height: 220 } },
+                    handleScan,
+                    () => {}
+                );
+
+                scannerRunning = true;
+                setScannerStatus('Scanner started. Point camera at QR code.', 'ok');
+            } catch (error) {
+                setScannerStatus('Unable to start scanner: ' + error.message, 'err');
+            }
+        }
+
+        async function stopScanner() {
+            if (!qrScanner || !scannerRunning) {
+                return;
+            }
+
+            try {
+                await qrScanner.stop();
+                scannerRunning = false;
+                setScannerStatus('Scanner stopped.');
+            } catch (error) {
+                setScannerStatus('Failed to stop scanner: ' + error.message, 'err');
+            }
+        }
+
+        startScanBtn.addEventListener('click', startScanner);
+        stopScanBtn.addEventListener('click', stopScanner);
+    </script>
 </body>
 </html>

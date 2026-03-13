@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <title>Food and Attendance | Atlas Admin</title>
+    <style>
+        @font-face { font-family: mcten; src: url('/resources/mc10.woff2') format('woff2'); }
+        @font-face { font-family: mc7; src: url('/resources/mc7.woff2') format('woff2'); }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            font-family: mcten, monospace;
+            cursor: url('/resources/crosshair-32.png') 16 16, crosshair;
+            background: radial-gradient(circle at top left, #111920 0%, #0a0a0a 45%, #000000 100%);
+            color: #ddd;
+        }
+
+        a, button, input, select { cursor: url('/resources/crosshair-32.png') 16 16, crosshair; }
+
+        .page {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .card {
+            border: 2px solid #2a2a2a;
+            background: linear-gradient(145deg, rgba(20, 20, 26, 0.9), rgba(6, 6, 10, 0.9));
+            box-shadow: inset -2px -4px rgba(0, 0, 0, 0.45), inset 2px 2px rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .title {
+            margin: 0;
+            color: #ffffa0;
+            font-family: 'mc7', monospace;
+            text-shadow: 2px 2px #000a;
+            font-size: clamp(18px, 2.8vw, 30px);
+        }
+
+        .subtitle {
+            margin: 0.25rem 0 0;
+            color: #90ee90;
+            font-family: 'mc7', monospace;
+            font-size: 0.82rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: 2px solid #000;
+            background: #444 url('/resources/bgbtn.png') center / cover;
+            color: #ddd;
+            text-decoration: none;
+            font-family: 'mc7', monospace;
+            text-shadow: 2px 2px #000a;
+            padding: 0.65rem 0.85rem;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #fff5;
+            transition: border-color 0.15s ease, filter 0.15s ease;
+        }
+
+        .btn:hover { border-color: #ffffa0; filter: brightness(1.08); }
+
+        .status {
+            border: 2px solid #2a2a2a;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 0.7rem 0.85rem;
+            font-family: 'mc7', monospace;
+            font-size: 0.75rem;
+            margin-bottom: 0.8rem;
+            color: #ccc;
+        }
+
+        .status.ok { color: #90ee90; border-color: #2a5a2a; }
+        .status.err { color: #ff9d9d; border-color: #5a2a2a; }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 220px 220px;
+            gap: 0.7rem;
+        }
+
+        .input, .select {
+            width: 100%;
+            border: 2px solid #000;
+            background: #222;
+            color: #fff;
+            font-family: 'mc7', monospace;
+            padding: 0.65rem 0.75rem;
+            font-size: 0.8rem;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #fff2;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1rem;
+        }
+
+        .team-list {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .team-card {
+            border: 2px solid #2a2a2a;
+            border-radius: 6px;
+            padding: 0.8rem;
+            background: linear-gradient(180deg, rgba(22, 22, 28, 0.95), rgba(10, 10, 14, 0.95));
+        }
+
+        .team-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.6rem;
+        }
+
+        .team-name {
+            margin: 0;
+            color: #ffffa0;
+            font-family: 'mc7', monospace;
+            font-size: 0.9rem;
+        }
+
+        .meta {
+            color: #bdbdbd;
+            font-family: 'mc7', monospace;
+            font-size: 0.7rem;
+            line-height: 1.5;
+        }
+
+        .members {
+            color: #8fc4ff;
+            font-family: 'mc7', monospace;
+            font-size: 0.68rem;
+            margin-top: 0.4rem;
+        }
+
+        .member-list {
+            display: grid;
+            gap: 0.55rem;
+            margin-top: 0.6rem;
+        }
+
+        .member-row {
+            border: 1px solid #32323b;
+            background: #0d1218;
+            padding: 0.55rem;
+        }
+
+        .member-name {
+            color: #9adfff;
+            font-family: 'mc7', monospace;
+            font-size: 0.72rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.45rem;
+            flex-wrap: wrap;
+        }
+
+        .member-meta {
+            color: #b6b6b6;
+            font-family: 'mc7', monospace;
+            font-size: 0.62rem;
+            margin-top: 0.3rem;
+        }
+
+        .session-grid {
+            margin-top: 0.7rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.45rem;
+        }
+
+        .session-btn {
+            width: 100%;
+            border: 1px solid #567;
+            background: #102a35;
+            color: #9adfff;
+            font-family: 'mc7', monospace;
+            font-size: 0.65rem;
+            padding: 0.5rem;
+        }
+
+        .session-btn:hover { border-color: #9adfff; }
+
+        .session-btn.collected {
+            background: #2f2f2f;
+            border-color: #666;
+            color: #9a9a9a;
+        }
+
+        .session-btn.collected::after {
+            content: ' (already collected)';
+            color: #bbb;
+        }
+
+        .sidebar-title {
+            margin: 0 0 0.7rem;
+            color: #ffffa0;
+            font-family: 'mc7', monospace;
+            font-size: 0.85rem;
+        }
+
+        .sheet-list {
+            max-height: 340px;
+            overflow: auto;
+            border: 1px solid #333;
+            padding: 0.55rem;
+            background: #0c0c11;
+            margin-bottom: 0.7rem;
+        }
+
+        .check-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.45rem;
+            font-family: 'mc7', monospace;
+            font-size: 0.68rem;
+        }
+
+        .small-btn {
+            width: 100%;
+            border: 1px solid #397339;
+            background: #163016;
+            color: #9dff9d;
+            font-family: 'mc7', monospace;
+            font-size: 0.7rem;
+            padding: 0.5rem;
+            margin-bottom: 0.45rem;
+        }
+
+        .qr-preview {
+            border: 1px solid #333;
+            background: #0c0c11;
+            padding: 0.7rem;
+            font-family: 'mc7', monospace;
+            font-size: 0.65rem;
+        }
+
+        .qr-preview img {
+            width: 180px;
+            max-width: 100%;
+            display: block;
+            margin: 0 auto 0.55rem;
+            border: 2px solid #333;
+        }
+
+        .hint {
+            color: #b0b0b0;
+            font-family: 'mc7', monospace;
+            font-size: 0.65rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 980px) {
+            .controls { grid-template-columns: 1fr; }
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            html, body, a, button, input, select { cursor: auto; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <section class="card top">
+        <div>
+            <h1 class="title">FOOD AND ATTENDANCE OPS</h1>
+            <p class="subtitle"><%= user.email %></p>
+        </div>
+        <div class="actions">
+            <a class="btn" href="/admin">Back to Admin</a>
+            <a class="btn" href="/logout">Logout</a>
+        </div>
+    </section>
+
+    <section class="card">
+        <div id="status" class="status">Search by team name or any team member name.</div>
+        <div class="controls">
+            <input id="searchInput" class="input" placeholder="Type team name or member name..." />
+            <select id="attendanceSession" class="select">
+                <% attendanceSessions.forEach((session) => { %>
+                    <option value="<%= session.id %>"><%= session.label %></option>
+                <% }) %>
+            </select>
+            <button id="searchBtn" class="btn" type="button">Search</button>
+        </div>
+    </section>
+
+    <section class="grid">
+        <div class="card">
+            <h2 class="sidebar-title">Search Results</h2>
+            <div id="teamList" class="team-list"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="sidebar-title">Manual Attendance Sheet</h2>
+            <div class="sheet-list" id="sheetList"></div>
+            <button id="markManualBtn" class="small-btn" type="button">Mark Selected Present</button>
+
+            <h2 class="sidebar-title">QR Attendance</h2>
+            <div id="qrPreview" class="qr-preview">
+                Select a team to generate an attendance QR.
+            </div>
+
+            <h2 class="sidebar-title">Wallet Integration</h2>
+            <p class="hint">Apple Wallet PKPASS and Google Wallet need issuer setup, certificates, and signing keys. This panel already generates stable attendance URLs and QR payloads, so wallet pass generation can be connected next.</p>
+            <p class="hint">Members table: <strong><%= teamMembersTable %></strong></p>
+            <p class="hint">Member operations table: <strong><%= memberOperationsTable %></strong></p>
+        </div>
+    </section>
+</div>
+
+<script>
+    const foodSessions = <%- JSON.stringify(foodSessions) %>;
+
+    const statusEl = document.getElementById('status');
+    const searchInput = document.getElementById('searchInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const teamList = document.getElementById('teamList');
+    const sheetList = document.getElementById('sheetList');
+    const attendanceSession = document.getElementById('attendanceSession');
+    const markManualBtn = document.getElementById('markManualBtn');
+    const qrPreview = document.getElementById('qrPreview');
+
+    let teams = [];
+
+    function setStatus(message, type = '') {
+        statusEl.className = 'status';
+        if (type) {
+            statusEl.classList.add(type);
+        }
+        statusEl.textContent = message;
+    }
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    async function searchTeams() {
+        const q = searchInput.value.trim();
+        setStatus('Searching teams...');
+
+        try {
+            const resp = await fetch('/api/admin/operations/search?q=' + encodeURIComponent(q));
+            const data = await resp.json();
+
+            if (!resp.ok || !data.success) {
+                throw new Error(data.message || 'Search failed');
+            }
+
+            teams = data.teams || [];
+            renderTeams();
+            renderSheet();
+
+            if (data.tableMissing) {
+                setStatus('Search worked, but operations table is missing. Create table before marking food or attendance.', 'err');
+            } else {
+                setStatus('Found ' + teams.length + ' team(s).');
+            }
+        } catch (error) {
+            setStatus(error.message || 'Search failed.', 'err');
+            teamList.innerHTML = '';
+            sheetList.innerHTML = '';
+        }
+    }
+
+    function renderTeams() {
+        if (!teams.length) {
+            teamList.innerHTML = '<div class="hint">No teams matched your search.</div>';
+            return;
+        }
+
+        teamList.innerHTML = teams.map((team) => {
+            const memberRows = (team.members || []).map((member) => {
+                const foodButtons = foodSessions.map((session) => {
+                    const collected = Boolean(member.food?.[session.id]);
+                    return '<button class="session-btn ' + (collected ? 'collected' : '') + '" data-member-id="' + escapeHtml(member.memberId) + '" data-session-id="' + escapeHtml(session.id) + '" ' + (collected ? 'disabled' : '') + '>' + escapeHtml(session.label) + '</button>';
+                }).join('');
+
+                return '<div class="member-row">'
+                    + '<div class="member-name">'
+                    + '<span>' + escapeHtml(member.memberName) + '</span>'
+                    + '<button class="btn show-qr" type="button" data-member-id="' + escapeHtml(member.memberId) + '">QR</button>'
+                    + '</div>'
+                    + '<div class="member-meta">Class: ' + escapeHtml(member.className || '-') + ' | Section: ' + escapeHtml(member.section || '-') + ' | Allegiance: ' + escapeHtml(member.allegiance || '-') + '</div>'
+                    + '<div class="session-grid">' + foodButtons + '</div>'
+                    + '</div>';
+            }).join('');
+
+            return '<article class="team-card" data-team-id="' + escapeHtml(team.teamId) + '">'
+                + '<div class="team-head">'
+                + '<h3 class="team-name">' + escapeHtml(team.teamName) + '</h3>'
+                + '</div>'
+                + '<div class="meta">Class: ' + escapeHtml(team.className || '-') + '<br>Section: ' + escapeHtml(team.section || '-') + '<br>Allegiance: ' + escapeHtml(team.allegiance || '-') + '<br>Email: ' + escapeHtml(team.teamEmail || '-') + '</div>'
+                + '<div class="members">Total Members: ' + escapeHtml((team.members || []).length) + '</div>'
+                + '<div class="member-list">' + memberRows + '</div>'
+                + '</article>';
+        }).join('');
+    }
+
+    function renderSheet() {
+        if (!teams.length) {
+            sheetList.innerHTML = '<div class="hint">Search first to build the attendance sheet list.</div>';
+            return;
+        }
+
+        const rows = [];
+
+        teams.forEach((team) => {
+            (team.members || []).forEach((member) => {
+                const checked = Boolean(member.attendance?.[attendanceSession.value]) ? 'checked' : '';
+                rows.push('<label class="check-row">'
+                    + '<input type="checkbox" value="' + escapeHtml(member.memberId) + '" ' + checked + '>'
+                    + '<span>' + escapeHtml(team.teamName) + ' - ' + escapeHtml(member.memberName) + '</span>'
+                    + '</label>');
+            });
+        });
+
+        sheetList.innerHTML = rows.join('') || '<div class="hint">No members available.</div>';
+    }
+
+    function renderQr(team, member) {
+        const session = attendanceSession.value;
+        const url = window.location.origin + '/attendance/scan/' + encodeURIComponent(member.attendanceToken) + '?session=' + encodeURIComponent(session);
+        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+
+        qrPreview.innerHTML = '<img alt="Attendance QR" src="' + qrUrl + '">'
+            + '<div><strong>' + escapeHtml(member.memberName) + '</strong></div>'
+            + '<div>Team: ' + escapeHtml(team.teamName) + '</div>'
+            + '<div>Session: ' + escapeHtml(session.replaceAll('_', ' ')) + '</div>'
+            + '<div class="hint" style="word-break: break-all; margin-top: 0.4rem;">' + escapeHtml(url) + '</div>';
+    }
+
+    async function markFood(memberId, sessionId) {
+        setStatus('Updating food collection...');
+
+        try {
+            const resp = await fetch('/api/admin/operations/food', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ memberId, sessionId })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+                throw new Error(data.message || 'Failed to mark collection');
+            }
+
+            teams = teams.map((team) => ({
+                ...team,
+                members: (team.members || []).map((member) => member.memberId === memberId ? data.member : member)
+            }));
+            renderTeams();
+            renderSheet();
+
+            if (data.alreadyCollected) {
+                setStatus('Already collected earlier. Kept visible and greyed out.', 'ok');
+            } else {
+                setStatus('Food marked successfully.', 'ok');
+            }
+        } catch (error) {
+            setStatus(error.message || 'Could not mark food.', 'err');
+        }
+    }
+
+    async function markManualAttendance() {
+        const checked = Array.from(sheetList.querySelectorAll('input[type="checkbox"]:checked')).map((node) => node.value);
+
+        if (!checked.length) {
+            setStatus('Select at least one member in the attendance sheet.', 'err');
+            return;
+        }
+
+        setStatus('Updating attendance...');
+
+        try {
+            const resp = await fetch('/api/admin/operations/attendance/manual', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: attendanceSession.value, memberIds: checked })
+            });
+
+            const data = await resp.json();
+            if (!resp.ok || !data.success) {
+                throw new Error(data.message || 'Failed to mark attendance');
+            }
+
+            teams = teams.map((team) => ({
+                ...team,
+                members: (team.members || []).map((member) => ({
+                    ...member,
+                    attendance: {
+                        ...member.attendance,
+                        [attendanceSession.value]: checked.includes(member.memberId) ? true : Boolean(member.attendance?.[attendanceSession.value])
+                    }
+                }))
+            }));
+
+            renderSheet();
+            setStatus('Manual attendance updated for ' + data.updated + ' team(s).', 'ok');
+        } catch (error) {
+            setStatus(error.message || 'Could not update attendance.', 'err');
+        }
+    }
+
+    searchBtn.addEventListener('click', searchTeams);
+    searchInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            searchTeams();
+        }
+    });
+
+    attendanceSession.addEventListener('change', () => {
+        renderSheet();
+        const selectedMemberId = qrPreview.getAttribute('data-member-id');
+        if (selectedMemberId) {
+            for (const team of teams) {
+                const selected = (team.members || []).find((member) => member.memberId === selectedMemberId);
+                if (selected) {
+                    renderQr(team, selected);
+                    qrPreview.setAttribute('data-member-id', selectedMemberId);
+                    break;
+                }
+            }
+        }
+    });
+
+    markManualBtn.addEventListener('click', markManualAttendance);
+
+    teamList.addEventListener('click', (event) => {
+        const foodBtn = event.target.closest('.session-btn');
+        if (foodBtn) {
+            markFood(foodBtn.getAttribute('data-member-id'), foodBtn.getAttribute('data-session-id'));
+            return;
+        }
+
+        const qrBtn = event.target.closest('.show-qr');
+        if (qrBtn) {
+            const memberId = qrBtn.getAttribute('data-member-id');
+            for (const team of teams) {
+                const member = (team.members || []).find((item) => item.memberId === memberId);
+                if (member) {
+                    renderQr(team, member);
+                    qrPreview.setAttribute('data-member-id', member.memberId);
+                    setStatus('QR ready for ' + member.memberName + ' (' + team.teamName + ').', 'ok');
+                    break;
+                }
+            }
+        }
+    });
+
+    searchTeams();
+</script>
+</body>
+</html>

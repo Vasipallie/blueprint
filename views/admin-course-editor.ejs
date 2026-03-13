@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="theme-color" content="#000000">
     <title>Course Editor | Atlas Admin</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.css">
     <style>
         @font-face { font-family: mcten; src: url('/resources/mc10.woff2') format('woff2'); }
         @font-face { font-family: mc7; src: url('/resources/mc7.woff2') format('woff2'); }
@@ -170,49 +171,19 @@
             line-height: 1.45;
         }
 
-        .editor-shell {
+        .summernote-shell {
             border: 2px solid #000;
             box-shadow: inset -2px -3px #0005, inset 2px 2px #FFF2;
             background: #fff;
         }
 
-        .toolbar {
-            border-bottom: 1px solid #d6d8dc;
-            background: #f4f6f8;
-            padding: 0.45rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.35rem;
-            position: sticky;
-            top: 0;
-            z-index: 2;
+        .note-editor.note-frame {
+            border: 0;
         }
 
-        .tool,
-        .tool-select {
-            border: 1px solid #c8d0da;
-            background: #fff;
-            color: #243040;
-            min-height: 34px;
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 14px;
-            border-radius: 4px;
+        .note-toolbar {
+            background: #eef2f6;
         }
-
-        .tool { min-width: 36px; }
-        .tool-select { padding: 0 0.35rem; }
-
-        .editor {
-            min-height: 500px;
-            background: #fff;
-            color: #111;
-            font-family: Arial, Helvetica, sans-serif;
-            padding: 1rem;
-            line-height: 1.6;
-            overflow-y: auto;
-        }
-
-        .editor:focus { outline: none; }
 
         .btn:hover,
         .link-btn:hover,
@@ -293,26 +264,9 @@
                 <textarea id="courseDescription" name="description" class="textarea" placeholder="What this course teaches..." required></textarea>
 
                 <label class="label">Article Content (HTML Rich Text)</label>
-                <div class="editor-shell">
-                    <div class="toolbar">
-                        <select class="tool-select" id="headingSelect">
-                            <option value="p">Paragraph</option>
-                            <option value="h1">Heading 1</option>
-                            <option value="h2">Heading 2</option>
-                            <option value="h3">Heading 3</option>
-                        </select>
-                        <button class="tool" type="button" data-cmd="bold"><strong>B</strong></button>
-                        <button class="tool" type="button" data-cmd="italic"><em>I</em></button>
-                        <button class="tool" type="button" data-cmd="underline"><u>U</u></button>
-                        <button class="tool" type="button" data-cmd="insertUnorderedList">• List</button>
-                        <button class="tool" type="button" data-cmd="insertOrderedList">1. List</button>
-                        <button class="tool" type="button" id="insertLinkBtn">Link</button>
-                        <button class="tool" type="button" id="insertImageBtn">Image</button>
-                        <button class="tool" type="button" data-cmd="removeFormat">Clear</button>
-                    </div>
-                    <div id="htmlEditor" class="editor" contenteditable="true"><p></p></div>
+                <div class="summernote-shell">
+                    <textarea id="htmlEditor" name="htmlContent"><p></p></textarea>
                 </div>
-                <input type="hidden" id="htmlContentInput" name="htmlContent">
 
                 <div class="btn-row">
                     <button class="btn" type="submit" id="saveBtn">Save Course</button>
@@ -327,6 +281,8 @@
         </main>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-lite.min.js"></script>
     <script>
         const query = new URLSearchParams(window.location.search);
         const saveStatus = document.getElementById('saveStatus');
@@ -334,12 +290,23 @@
         const courseId = document.getElementById('courseId');
         const courseName = document.getElementById('courseName');
         const courseDescription = document.getElementById('courseDescription');
-        const htmlEditor = document.getElementById('htmlEditor');
-        const htmlContentInput = document.getElementById('htmlContentInput');
         const saveBtn = document.getElementById('saveBtn');
         const deleteBtn = document.getElementById('deleteBtn');
         const deleteCourseForm = document.getElementById('deleteCourseForm');
         const deleteCourseId = document.getElementById('deleteCourseId');
+
+        $('#htmlEditor').summernote({
+            placeholder: 'Write course content here...',
+            tabsize: 2,
+            height: 480,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'clear']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['insert', ['link', 'picture', 'video']],
+                ['view', ['codeview']]
+            ]
+        });
 
         function applySaveStatus() {
             const save = query.get('save');
@@ -375,7 +342,7 @@
             courseId.value = '';
             courseName.value = '';
             courseDescription.value = '';
-            htmlEditor.innerHTML = '<p></p>';
+            $('#htmlEditor').summernote('code', '<p></p>');
             saveBtn.textContent = 'Save Course';
             deleteBtn.style.display = 'none';
             deleteCourseId.value = '';
@@ -388,43 +355,12 @@
                 courseId.value = button.dataset.courseId || '';
                 courseName.value = decodeURIComponent(button.dataset.courseName || '');
                 courseDescription.value = decodeURIComponent(button.dataset.courseDescription || '');
-                htmlEditor.innerHTML = decodeURIComponent(button.dataset.courseHtml || '') || '<p></p>';
+                $('#htmlEditor').summernote('code', decodeURIComponent(button.dataset.courseHtml || '') || '<p></p>');
                 saveBtn.textContent = 'Update Course';
                 deleteBtn.style.display = 'inline-flex';
                 deleteCourseId.value = button.dataset.courseId || '';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
-        });
-
-        document.querySelectorAll('[data-cmd]').forEach((button) => {
-            button.addEventListener('click', () => {
-                const cmd = button.dataset.cmd;
-                document.execCommand(cmd, false, null);
-                htmlEditor.focus();
-            });
-        });
-
-        document.getElementById('headingSelect').addEventListener('change', (event) => {
-            document.execCommand('formatBlock', false, event.target.value);
-            htmlEditor.focus();
-        });
-
-        document.getElementById('insertLinkBtn').addEventListener('click', () => {
-            const url = window.prompt('Enter link URL:');
-            if (!url) {
-                return;
-            }
-            document.execCommand('createLink', false, url);
-            htmlEditor.focus();
-        });
-
-        document.getElementById('insertImageBtn').addEventListener('click', () => {
-            const url = window.prompt('Enter image URL:');
-            if (!url) {
-                return;
-            }
-            document.execCommand('insertImage', false, url);
-            htmlEditor.focus();
         });
 
         deleteBtn.addEventListener('click', () => {
@@ -438,10 +374,6 @@
             }
 
             deleteCourseForm.submit();
-        });
-
-        courseForm.addEventListener('submit', () => {
-            htmlContentInput.value = htmlEditor.innerHTML;
         });
 
         applySaveStatus();
