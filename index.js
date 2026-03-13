@@ -197,10 +197,17 @@ async function resolveTeamName(user) {
     return 'Team';
 }
 
-function buildRandomPassword(length = 14) {
-    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
-    const bytes = crypto.randomBytes(length);
-    return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
+function buildRandomPassword(teamName = '') {
+    const prefix = String(teamName)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .slice(0, 3)
+        .toLowerCase();
+    const remaining = 6 - prefix.length;
+    const max = Math.pow(10, remaining);
+    const num = Math.floor(Math.random() * max).toString().padStart(remaining, '0');
+    return prefix + num;
 }
 
 function sanitizeTeamHandle(teamName) {
@@ -393,8 +400,6 @@ function buildTeamKey(teamRow) {
 
 function buildTeamSummary(teamRow) {
     const teamName = pickFirstValue(teamRow, ['team_name', 'name']) || 'Unnamed Team';
-    const className = pickFirstValue(teamRow, ['class', 'team_class', 'grade', 'standard']);
-    const section = pickFirstValue(teamRow, ['section', 'team_section']);
     const allegiance = pickFirstValue(teamRow, ['allegiance', 'allegens', 'house', 'group']);
     const rowId = buildTeamKey(teamRow) || teamName;
 
@@ -403,23 +408,17 @@ function buildTeamSummary(teamRow) {
         userId: teamRow.user_id || null,
         teamName,
         teamEmail: pickFirstValue(teamRow, ['team_email', 'email']),
-        className,
-        section,
         allegiance
     };
 }
 
 function buildMemberSummary(memberRow, teamSummary) {
-    const className = pickFirstValue(memberRow, ['class_name', 'class', 'grade', 'standard']) || teamSummary.className;
-    const section = pickFirstValue(memberRow, ['section']) || teamSummary.section;
     const allegiance = pickFirstValue(memberRow, ['allegiance', 'allegens', 'house', 'group']) || teamSummary.allegiance;
 
     return {
         memberId: String(memberRow.id),
         teamId: String(memberRow.team_id || teamSummary.teamId),
         memberName: pickFirstValue(memberRow, ['member_name', 'name']) || 'Unnamed Member',
-        className,
-        section,
         allegiance
     };
 }
@@ -432,10 +431,8 @@ function teamMatchesQuery(teamSummary, members, queryText) {
     const haystack = [
         teamSummary.teamName,
         teamSummary.teamEmail,
-        teamSummary.className,
-        teamSummary.section,
         teamSummary.allegiance,
-        ...members.map((member) => [member.memberName, member.className, member.section, member.allegiance].join(' '))
+        ...members.map((member) => [member.memberName, member.allegiance].join(' '))
     ].join(' ').toLowerCase();
 
     return haystack.includes(queryText);
@@ -957,8 +954,6 @@ app.post('/admin/teams/email-template', requireAdmin, async (req, res) => {
 
 app.post('/admin/teams/members', requireAdmin, async (req, res) => {
     const teamId = String(req.body?.teamId || '').trim();
-    const className = String(req.body?.className || '').trim();
-    const section = String(req.body?.section || '').trim();
     const allegiance = String(req.body?.allegiance || '').trim();
     const membersRaw = String(req.body?.members || '').trim();
 
@@ -994,8 +989,6 @@ app.post('/admin/teams/members', requireAdmin, async (req, res) => {
         const payload = memberNames.map((memberName) => ({
             team_id: teamId,
             member_name: memberName,
-            class_name: className || null,
-            section: section || null,
             allegiance: allegiance || null
         }));
 
@@ -1069,7 +1062,7 @@ app.post('/admin/create-team', requireAdmin, async (req, res) => {
     }
 
     const teamEmail = `${handle}@giisrobotics.club`;
-    const password = buildRandomPassword();
+    const password = buildRandomPassword(teamName);
     const recipients = (recipientsRaw || '')
         .split(',')
         .map((email) => email.trim())
@@ -1165,8 +1158,6 @@ function buildMemberOperationsPayload(teamSummary, memberSummary, patch) {
         team_name: teamSummary.teamName,
         team_email: teamSummary.teamEmail,
         member_name: memberSummary.memberName,
-        class_name: memberSummary.className,
-        section: memberSummary.section,
         allegiance: memberSummary.allegiance,
         ...patch,
         updated_at: new Date().toISOString()

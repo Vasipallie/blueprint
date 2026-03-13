@@ -99,6 +99,40 @@
             gap: 0.7rem;
         }
 
+        .mode-switch {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            border: 1px solid #425766;
+            background: #111e27;
+            color: #9adfff;
+            font-family: 'mc7', monospace;
+            font-size: 0.68rem;
+            padding: 0.48rem 0.7rem;
+        }
+
+        .mode-btn.active {
+            border-color: #90ee90;
+            background: #1b3523;
+            color: #b8ffb8;
+        }
+
+        .control-block.hidden {
+            display: none;
+        }
+
+        .workspace {
+            display: none;
+        }
+
+        .workspace.active {
+            display: block;
+        }
+
         .input, .select {
             width: 100%;
             border: 2px solid #000;
@@ -191,8 +225,29 @@
         .session-grid {
             margin-top: 0.7rem;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 0.45rem;
+        }
+
+        .day-group {
+            border: 1px solid #2a3844;
+            background: #0b1d27;
+            padding: 0.45rem;
+            border-radius: 4px;
+        }
+
+        .day-title {
+            color: #9adfff;
+            font-family: 'mc7', monospace;
+            font-size: 0.6rem;
+            margin-bottom: 0.35rem;
+            letter-spacing: 0.04em;
+        }
+
+        .day-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(80px, 1fr));
+            gap: 0.35rem;
         }
 
         .session-btn {
@@ -202,7 +257,7 @@
             color: #9adfff;
             font-family: 'mc7', monospace;
             font-size: 0.65rem;
-            padding: 0.5rem;
+            padding: 0.45rem;
         }
 
         .session-btn:hover { border-color: #9adfff; }
@@ -214,7 +269,7 @@
         }
 
         .session-btn.collected::after {
-            content: ' (already collected)';
+            content: '  done';
             color: #bbb;
         }
 
@@ -254,22 +309,6 @@
             margin-bottom: 0.45rem;
         }
 
-        .qr-preview {
-            border: 1px solid #333;
-            background: #0c0c11;
-            padding: 0.7rem;
-            font-family: 'mc7', monospace;
-            font-size: 0.65rem;
-        }
-
-        .qr-preview img {
-            width: 180px;
-            max-width: 100%;
-            display: block;
-            margin: 0 auto 0.55rem;
-            border: 2px solid #333;
-        }
-
         .hint {
             color: #b0b0b0;
             font-family: 'mc7', monospace;
@@ -302,37 +341,47 @@
 
     <section class="card">
         <div id="status" class="status">Search by team name or any team member name.</div>
+        <div class="mode-switch">
+            <button id="foodModeBtn" class="mode-btn active" type="button">Food Ops View</button>
+            <button id="attendanceModeBtn" class="mode-btn" type="button">Attendance View</button>
+        </div>
         <div class="controls">
             <input id="searchInput" class="input" placeholder="Type team name or member name..." />
-            <select id="attendanceSession" class="select">
-                <% attendanceSessions.forEach((session) => { %>
-                    <option value="<%= session.id %>"><%= session.label %></option>
-                <% }) %>
-            </select>
+            <div id="attendanceSessionWrap" class="control-block hidden">
+                <select id="attendanceSession" class="select">
+                    <% attendanceSessions.forEach((session) => { %>
+                        <option value="<%= session.id %>"><%= session.label %></option>
+                    <% }) %>
+                </select>
+            </div>
             <button id="searchBtn" class="btn" type="button">Search</button>
         </div>
     </section>
 
-    <section class="grid">
+    <section id="foodWorkspace" class="workspace active">
         <div class="card">
-            <h2 class="sidebar-title">Search Results</h2>
+            <h2 class="sidebar-title">Food Collection Queue</h2>
+            <p class="hint">Member cards below are focused only on food collection actions.</p>
             <div id="teamList" class="team-list"></div>
         </div>
+    </section>
 
-        <div class="card">
-            <h2 class="sidebar-title">Manual Attendance Sheet</h2>
-            <div class="sheet-list" id="sheetList"></div>
-            <button id="markManualBtn" class="small-btn" type="button">Mark Selected Present</button>
-
-            <h2 class="sidebar-title">QR Attendance</h2>
-            <div id="qrPreview" class="qr-preview">
-                Select a team to generate an attendance QR.
+    <section id="attendanceWorkspace" class="workspace">
+        <div class="grid">
+            <div class="card">
+                <h2 class="sidebar-title">Manual Attendance Sheet</h2>
+                <p class="hint">Choose session, tick members, then confirm once.</p>
+                <div class="sheet-list" id="sheetList"></div>
+                <button id="markManualBtn" class="small-btn" type="button">Mark Selected Present (Confirm)</button>
             </div>
 
-            <h2 class="sidebar-title">Wallet Integration</h2>
-            <p class="hint">Apple Wallet PKPASS and Google Wallet need issuer setup, certificates, and signing keys. This panel already generates stable attendance URLs and QR payloads, so wallet pass generation can be connected next.</p>
-            <p class="hint">Members table: <strong><%= teamMembersTable %></strong></p>
-            <p class="hint">Member operations table: <strong><%= memberOperationsTable %></strong></p>
+            <div class="card">
+                <h2 class="sidebar-title">Attendance Notes</h2>
+                <p class="hint">This view is attendance-only to avoid mixing food controls while marking presence.</p>
+                <p class="hint">Food actions and manual attendance ask for confirmation to prevent accidental taps.</p>
+                <p class="hint">Members table: <strong><%= teamMembersTable %></strong></p>
+                <p class="hint">Member operations table: <strong><%= memberOperationsTable %></strong></p>
+            </div>
         </div>
     </section>
 </div>
@@ -343,13 +392,18 @@
     const statusEl = document.getElementById('status');
     const searchInput = document.getElementById('searchInput');
     const searchBtn = document.getElementById('searchBtn');
+    const foodModeBtn = document.getElementById('foodModeBtn');
+    const attendanceModeBtn = document.getElementById('attendanceModeBtn');
+    const foodWorkspace = document.getElementById('foodWorkspace');
+    const attendanceWorkspace = document.getElementById('attendanceWorkspace');
+    const attendanceSessionWrap = document.getElementById('attendanceSessionWrap');
     const teamList = document.getElementById('teamList');
     const sheetList = document.getElementById('sheetList');
     const attendanceSession = document.getElementById('attendanceSession');
     const markManualBtn = document.getElementById('markManualBtn');
-    const qrPreview = document.getElementById('qrPreview');
 
     let teams = [];
+    let activeMode = 'food';
 
     function setStatus(message, type = '') {
         statusEl.className = 'status';
@@ -359,6 +413,24 @@
         statusEl.textContent = message;
     }
 
+    function setMode(mode) {
+        activeMode = mode === 'attendance' ? 'attendance' : 'food';
+
+        const isAttendance = activeMode === 'attendance';
+        foodModeBtn.classList.toggle('active', !isAttendance);
+        attendanceModeBtn.classList.toggle('active', isAttendance);
+        foodWorkspace.classList.toggle('active', !isAttendance);
+        attendanceWorkspace.classList.toggle('active', isAttendance);
+        attendanceSessionWrap.classList.toggle('hidden', !isAttendance);
+
+        if (isAttendance) {
+            renderSheet();
+            setStatus('Attendance view active. Select session and mark present members.');
+        } else {
+            setStatus('Food Ops view active. Search and mark collected sessions.');
+        }
+    }
+
     function escapeHtml(value) {
         return String(value || '')
             .replaceAll('&', '&amp;')
@@ -366,6 +438,44 @@
             .replaceAll('>', '&gt;')
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#39;');
+    }
+
+    function toTitle(value) {
+        return String(value || '')
+            .replaceAll('_', ' ')
+            .replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
+    function buildFoodGroups(member) {
+        const grouped = new Map();
+        const fallbackButtons = [];
+
+        foodSessions.forEach((session) => {
+            const collected = Boolean(member.food?.[session.id]);
+            const button = '<button class="session-btn ' + (collected ? 'collected' : '') + '" data-member-id="' + escapeHtml(member.memberId) + '" data-session-id="' + escapeHtml(session.id) + '" ' + (collected ? 'disabled' : '') + '>' + escapeHtml(toTitle(session.id.split('_').slice(1).join('_') || session.label)) + '</button>';
+            const match = /^day(\d+)_(.+)$/.exec(session.id);
+
+            if (!match) {
+                fallbackButtons.push(button);
+                return;
+            }
+
+            const day = Number(match[1]);
+            if (!grouped.has(day)) {
+                grouped.set(day, []);
+            }
+            grouped.get(day).push(button);
+        });
+
+        const dayBlocks = Array.from(grouped.keys())
+            .sort((a, b) => a - b)
+            .map((day) => '<div class="day-group"><div class="day-title">DAY ' + day + '</div><div class="day-actions">' + grouped.get(day).join('') + '</div></div>');
+
+        if (fallbackButtons.length) {
+            dayBlocks.push('<div class="day-group"><div class="day-title">OTHER</div><div class="day-actions">' + fallbackButtons.join('') + '</div></div>');
+        }
+
+        return dayBlocks.join('');
     }
 
     async function searchTeams() {
@@ -404,17 +514,13 @@
 
         teamList.innerHTML = teams.map((team) => {
             const memberRows = (team.members || []).map((member) => {
-                const foodButtons = foodSessions.map((session) => {
-                    const collected = Boolean(member.food?.[session.id]);
-                    return '<button class="session-btn ' + (collected ? 'collected' : '') + '" data-member-id="' + escapeHtml(member.memberId) + '" data-session-id="' + escapeHtml(session.id) + '" ' + (collected ? 'disabled' : '') + '>' + escapeHtml(session.label) + '</button>';
-                }).join('');
+                const foodButtons = buildFoodGroups(member);
 
                 return '<div class="member-row">'
                     + '<div class="member-name">'
                     + '<span>' + escapeHtml(member.memberName) + '</span>'
-                    + '<button class="btn show-qr" type="button" data-member-id="' + escapeHtml(member.memberId) + '">QR</button>'
                     + '</div>'
-                    + '<div class="member-meta">Class: ' + escapeHtml(member.className || '-') + ' | Section: ' + escapeHtml(member.section || '-') + ' | Allegiance: ' + escapeHtml(member.allegiance || '-') + '</div>'
+                    + '<div class="member-meta">Allegiance: ' + escapeHtml(member.allegiance || '-') + '</div>'
                     + '<div class="session-grid">' + foodButtons + '</div>'
                     + '</div>';
             }).join('');
@@ -423,7 +529,7 @@
                 + '<div class="team-head">'
                 + '<h3 class="team-name">' + escapeHtml(team.teamName) + '</h3>'
                 + '</div>'
-                + '<div class="meta">Class: ' + escapeHtml(team.className || '-') + '<br>Section: ' + escapeHtml(team.section || '-') + '<br>Allegiance: ' + escapeHtml(team.allegiance || '-') + '<br>Email: ' + escapeHtml(team.teamEmail || '-') + '</div>'
+                + '<div class="meta">Allegiance: ' + escapeHtml(team.allegiance || '-') + '<br>Email: ' + escapeHtml(team.teamEmail || '-') + '</div>'
                 + '<div class="members">Total Members: ' + escapeHtml((team.members || []).length) + '</div>'
                 + '<div class="member-list">' + memberRows + '</div>'
                 + '</article>';
@@ -451,19 +557,26 @@
         sheetList.innerHTML = rows.join('') || '<div class="hint">No members available.</div>';
     }
 
-    function renderQr(team, member) {
-        const session = attendanceSession.value;
-        const url = window.location.origin + '/attendance/scan/' + encodeURIComponent(member.attendanceToken) + '?session=' + encodeURIComponent(session);
-        const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
-
-        qrPreview.innerHTML = '<img alt="Attendance QR" src="' + qrUrl + '">'
-            + '<div><strong>' + escapeHtml(member.memberName) + '</strong></div>'
-            + '<div>Team: ' + escapeHtml(team.teamName) + '</div>'
-            + '<div>Session: ' + escapeHtml(session.replaceAll('_', ' ')) + '</div>'
-            + '<div class="hint" style="word-break: break-all; margin-top: 0.4rem;">' + escapeHtml(url) + '</div>';
-    }
-
     async function markFood(memberId, sessionId) {
+        let teamName = 'Team';
+        let memberName = 'Member';
+
+        for (const team of teams) {
+            const found = (team.members || []).find((member) => member.memberId === memberId);
+            if (found) {
+                teamName = team.teamName || teamName;
+                memberName = found.memberName || memberName;
+                break;
+            }
+        }
+
+        const sessionLabel = foodSessions.find((session) => session.id === sessionId)?.label || toTitle(sessionId);
+        const shouldContinue = window.confirm('Mark ' + sessionLabel + ' as collected for ' + memberName + ' (' + teamName + ')?');
+        if (!shouldContinue) {
+            setStatus('Food update cancelled.');
+            return;
+        }
+
         setStatus('Updating food collection...');
 
         try {
@@ -503,6 +616,13 @@
             return;
         }
 
+        const selectedAttendance = attendanceSession.options[attendanceSession.selectedIndex]?.text || toTitle(attendanceSession.value);
+        const shouldContinue = window.confirm('Mark ' + checked.length + ' selected member(s) present for ' + selectedAttendance + '?');
+        if (!shouldContinue) {
+            setStatus('Attendance update cancelled.');
+            return;
+        }
+
         setStatus('Updating attendance...');
 
         try {
@@ -536,6 +656,8 @@
     }
 
     searchBtn.addEventListener('click', searchTeams);
+    foodModeBtn.addEventListener('click', () => setMode('food'));
+    attendanceModeBtn.addEventListener('click', () => setMode('attendance'));
     searchInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -545,17 +667,6 @@
 
     attendanceSession.addEventListener('change', () => {
         renderSheet();
-        const selectedMemberId = qrPreview.getAttribute('data-member-id');
-        if (selectedMemberId) {
-            for (const team of teams) {
-                const selected = (team.members || []).find((member) => member.memberId === selectedMemberId);
-                if (selected) {
-                    renderQr(team, selected);
-                    qrPreview.setAttribute('data-member-id', selectedMemberId);
-                    break;
-                }
-            }
-        }
     });
 
     markManualBtn.addEventListener('click', markManualAttendance);
@@ -564,24 +675,10 @@
         const foodBtn = event.target.closest('.session-btn');
         if (foodBtn) {
             markFood(foodBtn.getAttribute('data-member-id'), foodBtn.getAttribute('data-session-id'));
-            return;
-        }
-
-        const qrBtn = event.target.closest('.show-qr');
-        if (qrBtn) {
-            const memberId = qrBtn.getAttribute('data-member-id');
-            for (const team of teams) {
-                const member = (team.members || []).find((item) => item.memberId === memberId);
-                if (member) {
-                    renderQr(team, member);
-                    qrPreview.setAttribute('data-member-id', member.memberId);
-                    setStatus('QR ready for ' + member.memberName + ' (' + team.teamName + ').', 'ok');
-                    break;
-                }
-            }
         }
     });
 
+    setMode('food');
     searchTeams();
 </script>
 </body>
