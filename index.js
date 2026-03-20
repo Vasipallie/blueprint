@@ -17,6 +17,8 @@ const coursesTable = process.env.SUPABASE_PROJECTS_TABLE || 'projects';
 const teamMembersTable = process.env.SUPABASE_TEAM_MEMBERS_TABLE || 'team_members';
 const memberOperationsTable = process.env.SUPABASE_MEMBER_OPERATIONS_TABLE || 'member_operations';
 const adminSettingsTable = process.env.SUPABASE_ADMIN_SETTINGS_TABLE || 'admin_settings';
+const electronicsInventoryTable = process.env.SUPABASE_ELECTRONICS_INVENTORY_TABLE || 'electronics_inventory';
+const electronicsLoansTable = process.env.SUPABASE_ELECTRONICS_LOANS_TABLE || 'electronics_loans';
 const attendanceSecret = process.env.ATTENDANCE_QR_SECRET || 'blueprint-attendance-secret';
 
 const supabase = createClient(supalink, supakey);
@@ -32,6 +34,28 @@ const FOOD_SESSIONS = [
 const ATTENDANCE_SESSIONS = [
     { id: 'attendance_day1', label: 'Day 1 Attendance' },
     { id: 'attendance_day2', label: 'Day 2 Attendance' }
+];
+
+const MAX_ACTIVE_LOANS_PER_TEAM = 2;
+
+const DEFAULT_ELECTRONICS_ITEMS = [
+    { slug: 'lcd', name: 'LCD', category: 'Output', image_url: 'https://placehold.co/640x480/101820/f5eecf?text=LCD', total_stock: 8 },
+    { slug: 'led-matrix', name: 'LED MATRIX', category: 'Output', image_url: 'https://placehold.co/640x480/0f1b2d/a7ffeb?text=LED+MATRIX', total_stock: 6 },
+    { slug: 'water-sensor', name: 'Water sensor', category: 'Output', image_url: 'https://placehold.co/640x480/10263a/c7f9ff?text=Water+sensor', total_stock: 10 },
+    { slug: 'relay', name: 'Relay', category: 'Output', image_url: 'https://placehold.co/640x480/2b1b0f/ffd9a3?text=Relay', total_stock: 12 },
+    { slug: 'arduino', name: 'Arduino', category: 'Output', image_url: 'https://placehold.co/640x480/1f2a0f/f3ff9f?text=Arduino', total_stock: 10 },
+    { slug: 'servo', name: 'Servo', category: 'Output', image_url: 'https://placehold.co/640x480/271433/f7d6ff?text=Servo', total_stock: 10 },
+    { slug: 'rgb-light', name: 'RGB Light', category: 'Output', image_url: 'https://placehold.co/640x480/2a0f17/ffd1de?text=RGB+Light', total_stock: 10 },
+    { slug: 'motor-driver', name: 'Motor Driver', category: 'Output', image_url: 'https://placehold.co/640x480/202020/fff0c2?text=Motor+Driver', total_stock: 8 },
+    { slug: 'stepper-motor', name: 'Stepper motor', category: 'Output', image_url: 'https://placehold.co/640x480/0f2222/c9fff5?text=Stepper+motor', total_stock: 8 },
+    { slug: '7-segment-display', name: '7 segment display', category: 'Output', image_url: 'https://placehold.co/640x480/1a0f25/e6c9ff?text=7+segment+display', total_stock: 12 },
+    { slug: 'joystick', name: 'Joystick', category: 'Input', image_url: 'https://placehold.co/640x480/151515/ffe8a3?text=Joystick', total_stock: 10 },
+    { slug: 'button-matrix', name: 'button matrix', category: 'Input', image_url: 'https://placehold.co/640x480/17253a/c2e6ff?text=button+matrix', total_stock: 10 },
+    { slug: 'ir-sensor', name: 'ir sensor', category: 'Input', image_url: 'https://placehold.co/640x480/2a140f/ffcfbd?text=ir+sensor', total_stock: 10 },
+    { slug: 'rfid', name: 'RFID', category: 'Input', image_url: 'https://placehold.co/640x480/0e2330/c3f3ff?text=RFID', total_stock: 10 },
+    { slug: 'microphone', name: 'Microphone', category: 'Input', image_url: 'https://placehold.co/640x480/1e1222/f5d0ff?text=Microphone', total_stock: 10 },
+    { slug: 'humidity-sensor', name: 'Humidity sensor', category: 'Input', image_url: 'https://placehold.co/640x480/112a24/cbffe8?text=Humidity+sensor', total_stock: 10 },
+    { slug: 'nfc-cards', name: 'NFC Cards', category: 'Input', image_url: 'https://placehold.co/640x480/252012/fff1c8?text=NFC+Cards', total_stock: 20 }
 ];
 
 
@@ -468,6 +492,89 @@ function verifyAttendanceToken(token) {
     return memberId;
 }
 
+async function ensureElectronicsInventorySeeded() {
+    const { data, error } = await supabase
+        .from(electronicsInventoryTable)
+        .select('id')
+        .limit(1);
+
+    if (error) {
+        throw error;
+    }
+
+    if ((data || []).length > 0) {
+        return;
+    }
+
+    const payload = DEFAULT_ELECTRONICS_ITEMS.map((item) => ({
+        ...item,
+        notes: 'Loan item. Must be returned.'
+    }));
+
+    const { error: seedError } = await supabase
+        .from(electronicsInventoryTable)
+        .insert(payload);
+
+    if (seedError) {
+        throw seedError;
+    }
+}
+
+async function resolveTeamSummaryForUser(user) {
+    const { data, error } = await supabase
+        .from(teamsTable)
+        .select('*')
+        .or(`user_id.eq.${user.id},team_email.eq.${user.email}`)
+        .limit(1);
+
+    if (error) {
+        throw error;
+    }
+
+    const row = (data || [])[0];
+    if (row) {
+        return buildTeamSummary(row);
+    }
+
+    return {
+        teamId: String(user.id || user.email || ''),
+        userId: user.id || null,
+        teamName: await resolveTeamName(user),
+        teamEmail: user.email || '',
+        allegiance: ''
+    };
+}
+
+function buildReservedMap(loans = []) {
+    const reservedMap = new Map();
+
+    loans.forEach((loan) => {
+        const itemId = Number(loan.item_id);
+        if (!itemId) {
+            return;
+        }
+        reservedMap.set(itemId, (reservedMap.get(itemId) || 0) + 1);
+    });
+
+    return reservedMap;
+}
+
+function normalizeLoanRow(row) {
+    return {
+        id: Number(row.id),
+        teamId: String(row.team_id || ''),
+        teamName: String(row.team_name || 'Unknown Team'),
+        teamEmail: String(row.team_email || ''),
+        itemId: Number(row.item_id),
+        itemName: String(row.item_name || ''),
+        status: String(row.status || 'pending'),
+        requestedAt: row.requested_at,
+        fulfilledAt: row.fulfilled_at,
+        returnedAt: row.returned_at,
+        notes: String(row.notes || '')
+    };
+}
+
 app.route('/').get((req, res) => {
     res.render('index');
 });
@@ -586,23 +693,7 @@ app.get('/dashboard', requireLogin, async (req, res) => {
 
     const teamName = await resolveTeamName(user);
 
-    let courses = [];
     let submissions = [];
-
-    try {
-        const { data, error } = await supabase
-            .from(coursesTable)
-            .select('*')
-            .order('id', { ascending: true });
-
-        if (error) {
-            console.error('Courses fetch error:', error.message);
-        } else {
-            courses = data || [];
-        }
-    } catch (error) {
-        console.error('Courses fetch failed:', error.message);
-    }
 
     try {
         const { data, error } = await supabase
@@ -624,7 +715,6 @@ app.get('/dashboard', requireLogin, async (req, res) => {
     res.render('atlas-dashboard', {
         user,
         teamName,
-        courses,
         submissions,
         query: req.query,
         isAdmin
@@ -632,42 +722,7 @@ app.get('/dashboard', requireLogin, async (req, res) => {
 });
 
 app.get('/dashboard/course/:id', requireLogin, async (req, res) => {
-    const user = req.session.user;
-    const isAdmin = await resolveAdminStatus(user);
-
-    req.session.isAdmin = isAdmin;
-
-    if (isAdmin) {
-        return res.redirect('/admin');
-    }
-
-    const teamName = await resolveTeamName(user);
-    const courseId = Number(req.params.id);
-
-    if (!courseId || Number.isNaN(courseId)) {
-        return res.redirect('/dashboard');
-    }
-
-    try {
-        const { data, error } = await supabase
-            .from(coursesTable)
-            .select('*')
-            .eq('id', courseId)
-            .maybeSingle();
-
-        if (error || !data) {
-            return res.redirect('/dashboard?course=not-found');
-        }
-
-        return res.render('atlas-course', {
-            user,
-            teamName,
-            course: data
-        });
-    } catch (error) {
-        console.error('Course fetch failed:', error.message);
-        return res.redirect('/dashboard?course=error');
-    }
+    return res.redirect('/dashboard?loan=1');
 });
 
 app.post('/dashboard/projects', requireLogin, async (req, res) => {
@@ -711,100 +766,15 @@ app.post('/dashboard/projects', requireLogin, async (req, res) => {
 });
 
 app.get('/admin/courses', requireAdmin, async (req, res) => {
-    let courses = [];
-
-    try {
-        const { data, error } = await supabase
-            .from(coursesTable)
-            .select('*')
-            .order('id', { ascending: true });
-
-        if (error) {
-            console.error('Admin courses fetch error:', error.message);
-        } else {
-            courses = data || [];
-        }
-    } catch (error) {
-        console.error('Admin courses fetch failed:', error.message);
-    }
-
-    res.render('admin-course-editor', {
-        user: req.session.user,
-        courses,
-        query: req.query
-    });
+    return res.redirect('/admin');
 });
 
 app.post('/admin/courses', requireAdmin, async (req, res) => {
-    const courseId = req.body.courseId ? Number(req.body.courseId) : null;
-    const name = String(req.body.name || '').trim();
-    const description = String(req.body.description || '').trim();
-    const htmlContent = String(req.body.htmlContent || '').trim();
-
-    if (!name || !description) {
-        return res.redirect('/admin/courses?save=missing');
-    }
-
-    const payload = {
-        name,
-        description,
-        html_content: htmlContent || '<p></p>'
-    };
-
-    try {
-        if (courseId && !Number.isNaN(courseId)) {
-            const { error } = await supabase
-                .from(coursesTable)
-                .update(payload)
-                .eq('id', courseId);
-
-            if (error) {
-                console.error('Course update error:', error.message);
-                return res.redirect('/admin/courses?save=error');
-            }
-
-            return res.redirect('/admin/courses?save=updated');
-        }
-
-        const { error } = await supabase
-            .from(coursesTable)
-            .insert(payload);
-
-        if (error) {
-            console.error('Course create error:', error.message);
-            return res.redirect('/admin/courses?save=error');
-        }
-
-        return res.redirect('/admin/courses?save=created');
-    } catch (error) {
-        console.error('Course save failed:', error.message);
-        return res.redirect('/admin/courses?save=error');
-    }
+    return res.redirect('/admin');
 });
 
 app.post('/admin/courses/delete', requireAdmin, async (req, res) => {
-    const courseId = req.body.courseId ? Number(req.body.courseId) : null;
-
-    if (!courseId || Number.isNaN(courseId)) {
-        return res.redirect('/admin/courses?save=invalid-delete');
-    }
-
-    try {
-        const { error } = await supabase
-            .from(coursesTable)
-            .delete()
-            .eq('id', courseId);
-
-        if (error) {
-            console.error('Course delete error:', error.message);
-            return res.redirect('/admin/courses?save=delete-error');
-        }
-
-        return res.redirect('/admin/courses?save=deleted');
-    } catch (error) {
-        console.error('Course delete failed:', error.message);
-        return res.redirect('/admin/courses?save=delete-error');
-    }
+    return res.redirect('/admin');
 });
 
 app.get('/admin/emails', requireAdmin, (req, res) => {
@@ -868,18 +838,15 @@ app.post('/admin/emails/send', requireAdmin, async (req, res) => {
 
 app.get('/admin', requireAdmin, async (req, res) => {
     let teamCount = 0;
-    let courseCount = 0;
     let submissionCount = 0;
 
     try {
-        const [{ count: teamsCount }, { count: coursesCount }, { count: submissionsCount }] = await Promise.all([
+        const [{ count: teamsCount }, { count: submissionsCount }] = await Promise.all([
             supabase.from(teamsTable).select('*', { count: 'exact', head: true }),
-            supabase.from(coursesTable).select('*', { count: 'exact', head: true }),
             supabase.from(submissionsTable).select('*', { count: 'exact', head: true })
         ]);
 
         teamCount = teamsCount || 0;
-        courseCount = coursesCount || 0;
         submissionCount = submissionsCount || 0;
     } catch (error) {
         console.error('Admin summary fetch failed:', error.message);
@@ -888,7 +855,6 @@ app.get('/admin', requireAdmin, async (req, res) => {
     res.render('admin-dashboard', {
         user: req.session.user,
         teamCount,
-        courseCount,
         submissionCount
     });
 });
@@ -1208,6 +1174,157 @@ async function fetchTeamMapByIds(teamIds) {
     return map;
 }
 
+app.get('/api/loans/catalog', requireLogin, async (req, res) => {
+    try {
+        await ensureElectronicsInventorySeeded();
+
+        const team = await resolveTeamSummaryForUser(req.session.user);
+
+        const [{ data: inventoryData, error: inventoryError }, { data: activeLoanData, error: activeLoanError }, { data: allOpenLoans, error: allOpenLoansError }, { data: historyData, error: historyError }] = await Promise.all([
+            supabase
+                .from(electronicsInventoryTable)
+                .select('*')
+                .order('category', { ascending: true })
+                .order('name', { ascending: true }),
+            supabase
+                .from(electronicsLoansTable)
+                .select('*')
+                .eq('team_id', team.teamId)
+                .in('status', ['pending', 'fulfilled'])
+                .order('requested_at', { ascending: false }),
+            supabase
+                .from(electronicsLoansTable)
+                .select('item_id')
+                .in('status', ['pending', 'fulfilled']),
+            supabase
+                .from(electronicsLoansTable)
+                .select('*')
+                .eq('team_id', team.teamId)
+                .order('requested_at', { ascending: false })
+                .limit(20)
+        ]);
+
+        if (inventoryError || activeLoanError || allOpenLoansError || historyError) {
+            return res.status(500).json({
+                success: false,
+                message: inventoryError?.message || activeLoanError?.message || allOpenLoansError?.message || historyError?.message || 'Failed to fetch loan catalog.'
+            });
+        }
+
+        const reservedMap = buildReservedMap(allOpenLoans || []);
+        const activeLoanIds = new Set((activeLoanData || []).map((row) => Number(row.item_id)));
+        const activeLoans = (activeLoanData || []).map(normalizeLoanRow);
+
+        const items = (inventoryData || []).map((item) => {
+            const itemId = Number(item.id);
+            const totalStock = Number(item.total_stock || 0);
+            const reserved = reservedMap.get(itemId) || 0;
+            const available = Math.max(0, totalStock - reserved);
+
+            return {
+                id: itemId,
+                slug: item.slug,
+                name: item.name,
+                category: item.category,
+                imageUrl: item.image_url,
+                notes: item.notes,
+                totalStock,
+                reserved,
+                available,
+                alreadyRequestedByTeam: activeLoanIds.has(itemId)
+            };
+        });
+
+        const activeCount = activeLoans.length;
+        const remainingSlots = Math.max(0, MAX_ACTIVE_LOANS_PER_TEAM - activeCount);
+
+        return res.json({
+            success: true,
+            team,
+            maxActiveLoans: MAX_ACTIVE_LOANS_PER_TEAM,
+            activeCount,
+            remainingSlots,
+            activeLoans,
+            recentLoans: (historyData || []).map(normalizeLoanRow),
+            items
+        });
+    } catch (error) {
+        console.error('Loan catalog fetch failed:', error.message);
+        return res.status(500).json({ success: false, message: 'Failed to load electronics catalog.' });
+    }
+});
+
+app.post('/api/loans/request', requireLogin, async (req, res) => {
+    const itemId = Number(req.body?.itemId);
+
+    if (!itemId || Number.isNaN(itemId)) {
+        return res.status(400).json({ success: false, message: 'Choose a valid item.' });
+    }
+
+    try {
+        await ensureElectronicsInventorySeeded();
+        const team = await resolveTeamSummaryForUser(req.session.user);
+
+        const [{ data: item, error: itemError }, { data: teamActiveLoans, error: teamLoansError }, { data: openLoansForItem, error: openLoansError }] = await Promise.all([
+            supabase.from(electronicsInventoryTable).select('*').eq('id', itemId).maybeSingle(),
+            supabase.from(electronicsLoansTable).select('*').eq('team_id', team.teamId).in('status', ['pending', 'fulfilled']),
+            supabase.from(electronicsLoansTable).select('id').eq('item_id', itemId).in('status', ['pending', 'fulfilled'])
+        ]);
+
+        if (itemError || teamLoansError || openLoansError) {
+            return res.status(500).json({
+                success: false,
+                message: itemError?.message || teamLoansError?.message || openLoansError?.message || 'Failed to validate loan request.'
+            });
+        }
+
+        if (!item) {
+            return res.status(404).json({ success: false, message: 'Item not found.' });
+        }
+
+        const activeLoans = teamActiveLoans || [];
+        if (activeLoans.length >= MAX_ACTIVE_LOANS_PER_TEAM) {
+            return res.status(400).json({ success: false, message: `Loan limit reached. Max ${MAX_ACTIVE_LOANS_PER_TEAM} active items per team.` });
+        }
+
+        if (activeLoans.some((loan) => Number(loan.item_id) === itemId)) {
+            return res.status(400).json({ success: false, message: 'You already requested this item and it is still active.' });
+        }
+
+        const totalStock = Number(item.total_stock || 0);
+        const reserved = (openLoansForItem || []).length;
+        if (reserved >= totalStock) {
+            return res.status(400).json({ success: false, message: 'This item is currently out for loan. Please pick another item.' });
+        }
+
+        const payload = {
+            team_id: team.teamId,
+            team_name: team.teamName,
+            team_email: team.teamEmail,
+            item_id: itemId,
+            item_name: item.name,
+            status: 'pending',
+            requested_at: new Date().toISOString(),
+            notes: 'Loan requested by team. Item must be returned.'
+        };
+
+        const { data: created, error: createError } = await supabase
+            .from(electronicsLoansTable)
+            .insert(payload)
+            .select('*')
+            .limit(1);
+
+        if (createError) {
+            return res.status(500).json({ success: false, message: createError.message });
+        }
+
+        return res.json({ success: true, loan: normalizeLoanRow((created || [])[0] || payload) });
+    } catch (error) {
+        console.error('Loan request failed:', error.message);
+        return res.status(500).json({ success: false, message: 'Failed to request item loan.' });
+    }
+});
+
 app.get('/admin/operations', requireAdmin, (req, res) => {
     res.render('admin-operations', {
         user: req.session.user,
@@ -1216,6 +1333,190 @@ app.get('/admin/operations', requireAdmin, (req, res) => {
         teamMembersTable,
         memberOperationsTable
     });
+});
+
+app.get('/admin/loans', requireAdmin, (req, res) => {
+    res.render('admin-loans', {
+        user: req.session.user,
+        maxActiveLoans: MAX_ACTIVE_LOANS_PER_TEAM
+    });
+});
+
+app.get('/api/admin/loans/dashboard', requireAdmin, async (req, res) => {
+    try {
+        await ensureElectronicsInventorySeeded();
+
+        const [{ data: inventoryData, error: inventoryError }, { data: openLoanData, error: openLoanError }, { data: allLoansData, error: allLoansError }] = await Promise.all([
+            supabase
+                .from(electronicsInventoryTable)
+                .select('*')
+                .order('category', { ascending: true })
+                .order('name', { ascending: true }),
+            supabase
+                .from(electronicsLoansTable)
+                .select('item_id,status')
+                .in('status', ['pending', 'fulfilled']),
+            supabase
+                .from(electronicsLoansTable)
+                .select('*')
+                .order('requested_at', { ascending: false })
+                .limit(500)
+        ]);
+
+        if (inventoryError || openLoanError || allLoansError) {
+            return res.status(500).json({
+                success: false,
+                message: inventoryError?.message || openLoanError?.message || allLoansError?.message || 'Failed to fetch admin loan dashboard.'
+            });
+        }
+
+        const reservedMap = buildReservedMap(openLoanData || []);
+        const inventory = (inventoryData || []).map((item) => {
+            const totalStock = Number(item.total_stock || 0);
+            const reserved = reservedMap.get(Number(item.id)) || 0;
+            return {
+                id: Number(item.id),
+                slug: item.slug,
+                name: item.name,
+                category: item.category,
+                imageUrl: item.image_url,
+                notes: item.notes,
+                totalStock,
+                reserved,
+                available: Math.max(0, totalStock - reserved)
+            };
+        });
+
+        return res.json({
+            success: true,
+            maxActiveLoans: MAX_ACTIVE_LOANS_PER_TEAM,
+            inventory,
+            loans: (allLoansData || []).map(normalizeLoanRow)
+        });
+    } catch (error) {
+        console.error('Admin loan dashboard failed:', error.message);
+        return res.status(500).json({ success: false, message: 'Failed to load loan dashboard.' });
+    }
+});
+
+app.post('/api/admin/loans/:loanId/status', requireAdmin, async (req, res) => {
+    const loanId = Number(req.params.loanId);
+    const nextStatus = String(req.body?.status || '').trim().toLowerCase();
+
+    if (!loanId || Number.isNaN(loanId) || !['pending', 'fulfilled', 'returned'].includes(nextStatus)) {
+        return res.status(400).json({ success: false, message: 'Invalid loan update request.' });
+    }
+
+    try {
+        const { data: loan, error: loanError } = await supabase
+            .from(electronicsLoansTable)
+            .select('*')
+            .eq('id', loanId)
+            .maybeSingle();
+
+        if (loanError) {
+            return res.status(500).json({ success: false, message: loanError.message });
+        }
+
+        if (!loan) {
+            return res.status(404).json({ success: false, message: 'Loan record not found.' });
+        }
+
+        if (nextStatus === 'fulfilled') {
+            if (loan.status === 'returned') {
+                return res.status(400).json({ success: false, message: 'Returned loans cannot be fulfilled again.' });
+            }
+
+            const [{ data: item, error: itemError }, { data: openLoans, error: openLoansError }] = await Promise.all([
+                supabase.from(electronicsInventoryTable).select('id,total_stock').eq('id', loan.item_id).maybeSingle(),
+                supabase
+                    .from(electronicsLoansTable)
+                    .select('id')
+                    .eq('item_id', loan.item_id)
+                    .in('status', ['pending', 'fulfilled'])
+            ]);
+
+            if (itemError || openLoansError) {
+                return res.status(500).json({ success: false, message: itemError?.message || openLoansError?.message || 'Failed to verify stock.' });
+            }
+
+            const totalStock = Number(item?.total_stock || 0);
+            const reservedOthers = Math.max(0, (openLoans || []).length - (loan.status === 'pending' || loan.status === 'fulfilled' ? 1 : 0));
+            if (reservedOthers >= totalStock) {
+                return res.status(400).json({ success: false, message: 'No stock available to fulfill this request.' });
+            }
+        }
+
+        const patch = {
+            status: nextStatus
+        };
+
+        if (nextStatus === 'fulfilled') {
+            patch.fulfilled_at = new Date().toISOString();
+            patch.fulfilled_by = req.session.user?.email || 'admin';
+            patch.returned_at = null;
+            patch.returned_by = null;
+        }
+
+        if (nextStatus === 'returned') {
+            patch.returned_at = new Date().toISOString();
+            patch.returned_by = req.session.user?.email || 'admin';
+        }
+
+        if (nextStatus === 'pending') {
+            patch.fulfilled_at = null;
+            patch.fulfilled_by = null;
+            patch.returned_at = null;
+            patch.returned_by = null;
+        }
+
+        const { data: updated, error: updateError } = await supabase
+            .from(electronicsLoansTable)
+            .update(patch)
+            .eq('id', loanId)
+            .select('*')
+            .limit(1);
+
+        if (updateError) {
+            return res.status(500).json({ success: false, message: updateError.message });
+        }
+
+        return res.json({ success: true, loan: normalizeLoanRow((updated || [])[0] || { ...loan, ...patch }) });
+    } catch (error) {
+        console.error('Admin loan status update failed:', error.message);
+        return res.status(500).json({ success: false, message: 'Failed to update loan status.' });
+    }
+});
+
+app.post('/api/admin/inventory/:itemId/stock', requireAdmin, async (req, res) => {
+    const itemId = Number(req.params.itemId);
+    const totalStock = Number(req.body?.totalStock);
+
+    if (!itemId || Number.isNaN(itemId) || Number.isNaN(totalStock) || totalStock < 0) {
+        return res.status(400).json({ success: false, message: 'Provide a valid item and stock count.' });
+    }
+
+    try {
+        const { data: updated, error } = await supabase
+            .from(electronicsInventoryTable)
+            .update({ total_stock: Math.floor(totalStock), updated_at: new Date().toISOString() })
+            .eq('id', itemId)
+            .select('*')
+            .limit(1);
+
+        if (error) {
+            return res.status(500).json({ success: false, message: error.message });
+        }
+
+        if (!(updated || []).length) {
+            return res.status(404).json({ success: false, message: 'Inventory item not found.' });
+        }
+
+        return res.json({ success: true });
+    } catch (error) {
+        console.error('Inventory stock update failed:', error.message);
+        return res.status(500).json({ success: false, message: 'Failed to update stock count.' });
+    }
 });
 
 app.get('/api/admin/operations/search', requireAdmin, async (req, res) => {

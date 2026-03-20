@@ -290,7 +290,7 @@
             <div class="hero-text">
                 <h1>Welcome Back, <%= teamName %></h1>
                 <p class="team-tag">Blueprint Atlas Dashboard</p>
-                <p>View your timeline, submit projects, and access course materials.</p>
+                <p>View your timeline, submit projects, and request electronics parts on loan.</p>
             </div>
         </div>
 
@@ -298,7 +298,7 @@
         <div class="tabs">
             <button class="tab-btn active" data-tab="overview">📋 OVERVIEW</button>
             <button class="tab-btn" data-tab="submit">📤 SUBMIT</button>
-            <button class="tab-btn" data-tab="courses">📚 COURSES</button>
+            <button class="tab-btn" data-tab="loans">🔌 LOANS</button>
         </div>
 
         <!-- Overview Tab -->
@@ -308,17 +308,28 @@
             <h3 class="day-header">Day 1 — March 30</h3>
             <div class="timeline">
                 <div class="timeline-item"><div class="timeline-time">8:30 AM - 9:00 AM</div><div class="timeline-title">Registration</div><div class="timeline-desc">Teams arrive and check in.</div></div>
-                <div class="timeline-item"><div class="timeline-time">9:00 AM - 9:40 AM</div><div class="timeline-title">Opening Ceremony</div><div class="timeline-desc">Theme introduction and briefing.</div></div>
+                <div class="timeline-item"><div class="timeline-time">9:00 AM - 9:40 AM</div><div class="timeline-title">Opening Ceremony</div><div class="timeline-desc">Theme intro and event flow briefing (with extra buffer).</div></div>
                 <div class="timeline-item"><div class="timeline-time">9:40 AM - 11:00 AM</div><div class="timeline-title">Workshop Session 1</div><div class="timeline-desc">Core concept workshop.</div></div>
-                <div class="timeline-item"><div class="timeline-time">11:15 AM - 1:00 PM</div><div class="timeline-title">Workshop Session 2</div><div class="timeline-desc">Specialized tracks.</div></div>
-                <div class="timeline-item"><div class="timeline-time">2:50 PM - 6:30 PM</div><div class="timeline-title">Build Sessions</div><div class="timeline-desc">Hands-on build and prototype.</div></div>
+                <div class="timeline-item"><div class="timeline-time">11:00 AM - 12:30 PM</div><div class="timeline-title">Workshop Session 2</div><div class="timeline-desc">Continue workshop tracks.</div></div>
+                <div class="timeline-item"><div class="timeline-time">12:30 PM - 1:00 PM</div><div class="timeline-title">Lunch</div><div class="timeline-desc">Lunch break.</div></div>
+                <div class="timeline-item"><div class="timeline-time">1:00 PM - 2:30 PM</div><div class="timeline-title">Workshop Session 3</div><div class="timeline-desc">Final workshop block.</div></div>
+                <div class="timeline-item"><div class="timeline-time">2:30 PM - 4:25 PM</div><div class="timeline-title">Build Session 1</div><div class="timeline-desc">Hands-on robot build.</div></div>
+                <div class="timeline-item"><div class="timeline-time">4:30 PM - 4:45 PM</div><div class="timeline-title">Snack 2</div><div class="timeline-desc">Snack break.</div></div>
+                <div class="timeline-item"><div class="timeline-time">4:45 PM - 6:45 PM</div><div class="timeline-title">Build Session 2</div><div class="timeline-desc">Continue building and testing.</div></div>
+                <div class="timeline-item"><div class="timeline-time">6:45 PM - 7:30 PM</div><div class="timeline-title">Dinner</div><div class="timeline-desc">Dinner break.</div></div>
+                <div class="timeline-item"><div class="timeline-time">7:30 PM</div><div class="timeline-title">Wrap Up</div><div class="timeline-desc">Close Day 1 and prep for Day 2.</div></div>
             </div>
 
             <h3 class="day-header">Day 2 — March 31</h3>
             <div class="timeline">
-                <div class="timeline-item"><div class="timeline-time">9:00 AM - 4:00 PM</div><div class="timeline-title">Final Build</div><div class="timeline-desc">Complete and polish your project.</div></div>
-                <div class="timeline-item"><div class="timeline-time">4:00 PM - 5:30 PM</div><div class="timeline-title">Judging Session</div><div class="timeline-desc">Present to judges and tech team.</div></div>
-                <div class="timeline-item"><div class="timeline-time">5:45 PM - 6:30 PM</div><div class="timeline-title">Awards Ceremony</div><div class="timeline-desc">Awards and closing celebration.</div></div>
+                <div class="timeline-item"><div class="timeline-time">9:00 AM - 10:30 AM</div><div class="timeline-title">Build Session 1</div><div class="timeline-desc">Continue building from Day 1; tech team checks across venues.</div></div>
+                <div class="timeline-item"><div class="timeline-time">10:30 AM - 10:45 AM</div><div class="timeline-title">Snack 1</div><div class="timeline-desc">Snack break.</div></div>
+                <div class="timeline-item"><div class="timeline-time">10:45 AM - 12:30 PM</div><div class="timeline-title">Build Session 2</div><div class="timeline-desc">Continue building; volunteers support photos and misc tasks.</div></div>
+                <div class="timeline-item"><div class="timeline-time">12:30 PM - 1:00 PM</div><div class="timeline-title">Lunch</div><div class="timeline-desc">Lunch break.</div></div>
+                <div class="timeline-item"><div class="timeline-time">1:00 PM - 4:00 PM</div><div class="timeline-title">Build Session 3 + Pitch Prep</div><div class="timeline-desc">Finalize robots and prepare pitch.</div></div>
+                <div class="timeline-item"><div class="timeline-time">4:00 PM - 6:00 PM</div><div class="timeline-title">Judging Session</div><div class="timeline-desc">Judging with judges and tech team.</div></div>
+                <div class="timeline-item"><div class="timeline-time">6:00 PM - 6:10 PM</div><div class="timeline-title">Snack 2</div><div class="timeline-desc">Quick break and chill time after presentation.</div></div>
+                <div class="timeline-item"><div class="timeline-time">6:15 PM - 7:00 PM</div><div class="timeline-title">Awards Ceremony</div><div class="timeline-desc">Winners' photos, full group photo, and club team photo.</div></div>
             </div>
 
             <h2 class="section-title" style="margin-top:1.5rem;">Your Submissions</h2>
@@ -372,35 +383,14 @@
             </form>
         </div>
 
-        <!-- Courses Tab -->
-        <div class="tab-content" id="panel-courses">
-            <h2 class="section-title">Courses</h2>
-            <% if (typeof query !== 'undefined' && query.course === 'not-found') { %>
-                <div class="status-box status-box--err">Selected article was not found.</div>
-            <% } %>
-            <% if (typeof query !== 'undefined' && query.course === 'error') { %>
-                <div class="status-box status-box--err">Could not load article. Please retry.</div>
-            <% } %>
-            <% if (courses.length === 0) { %>
-                <div class="status-box">No courses available yet.</div>
-            <% } %>
-            <div class="courses-grid">
-                <% courses.forEach((course) => {
-                    const courseName = course.name || course.project_name || course.title || 'Untitled Course';
-                    const courseDesc = course.description || course.project_description || 'No description available.';
-                    const courseId = course.id;
-                %>
-                    <article class="course-card">
-                        <h3 class="course-name"><%= courseName %></h3>
-                        <p class="course-desc"><%= courseDesc %></p>
-                        <% if (courseId) { %>
-                            <a class="course-link" href="/dashboard/course/<%= courseId %>">▶ OPEN ARTICLE</a>
-                        <% } else { %>
-                            <div class="status-box status-box--err" style="margin:0;padding:.4rem .6rem;font-size:.65rem;">Course ID missing</div>
-                        <% } %>
-                    </article>
-                <% }) %>
-            </div>
+        <!-- Loans Tab -->
+        <div class="tab-content" id="panel-loans">
+            <h2 class="section-title">Electronics Loan Catalog</h2>
+            <div id="loanStatus" class="status-box">Loading electronics items...</div>
+            <div id="loanSummary" class="status-box"></div>
+            <div class="courses-grid" id="loanCatalog"></div>
+            <h2 class="section-title" style="margin-top:1.2rem;">Your Loan Requests</h2>
+            <div class="submission-list" id="loanHistory"></div>
         </div>
 
         <div class="sim-footer">
@@ -413,7 +403,7 @@
         const panels = {
             overview: document.getElementById('panel-overview'),
             submit: document.getElementById('panel-submit'),
-            courses: document.getElementById('panel-courses')
+            loans: document.getElementById('panel-loans')
         };
 
         function activateTab(tab) {
@@ -429,7 +419,150 @@
 
         const params = new URLSearchParams(window.location.search);
         if (params.get('submit')) activateTab('submit');
-        if (params.get('course')) activateTab('courses');
+        function escapeHtml(value) {
+            return String(value || '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function formatDate(value) {
+            if (!value) return '-';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '-';
+            return date.toLocaleString();
+        }
+
+        const loanStatus = document.getElementById('loanStatus');
+        const loanSummary = document.getElementById('loanSummary');
+        const loanCatalog = document.getElementById('loanCatalog');
+        const loanHistory = document.getElementById('loanHistory');
+
+        let loanState = {
+            maxActiveLoans: 2,
+            activeCount: 0,
+            remainingSlots: 2,
+            items: [],
+            recentLoans: []
+        };
+
+        function setLoanStatus(message, type = '') {
+            loanStatus.className = 'status-box';
+            if (type) {
+                loanStatus.classList.add(type === 'ok' ? 'status-box--ok' : 'status-box--err');
+            }
+            loanStatus.textContent = message;
+        }
+
+        function renderLoanSummary() {
+            loanSummary.innerHTML = 'Max active loans: <strong>' + escapeHtml(loanState.maxActiveLoans) + '</strong>'
+                + ' | Active now: <strong>' + escapeHtml(loanState.activeCount) + '</strong>'
+                + ' | Slots left: <strong>' + escapeHtml(loanState.remainingSlots) + '</strong>'
+                + ' | Reminder: all parts are loans and must be returned.';
+        }
+
+        function renderLoanCatalog() {
+            if (!loanState.items.length) {
+                loanCatalog.innerHTML = '<div class="status-box">No electronics inventory found.</div>';
+                return;
+            }
+
+            loanCatalog.innerHTML = loanState.items.map((item) => {
+                const disabled = loanState.remainingSlots <= 0 || item.available <= 0 || item.alreadyRequestedByTeam;
+                const buttonText = item.alreadyRequestedByTeam
+                    ? 'Already Requested'
+                    : item.available <= 0
+                        ? 'Out of Stock'
+                        : loanState.remainingSlots <= 0
+                            ? 'Loan Limit Reached'
+                            : 'Request Loan';
+
+                return '<article class="course-card">'
+                    + '<img src="' + escapeHtml(item.imageUrl || '') + '" alt="' + escapeHtml(item.name) + '" style="width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid #333;border-radius:3px;margin-bottom:.6rem;">'
+                    + '<h3 class="course-name">' + escapeHtml(item.name) + '</h3>'
+                    + '<p class="course-desc">Category: ' + escapeHtml(item.category) + '<br>Available: ' + escapeHtml(item.available) + ' / ' + escapeHtml(item.totalStock) + '<br>Loan item. Must be returned.</p>'
+                    + '<button class="course-link" type="button" data-item-id="' + escapeHtml(item.id) + '" ' + (disabled ? 'disabled' : '') + '>' + escapeHtml(buttonText) + '</button>'
+                    + '</article>';
+            }).join('');
+        }
+
+        function renderLoanHistory() {
+            if (!loanState.recentLoans.length) {
+                loanHistory.innerHTML = '<div class="status-box">No loan requests yet.</div>';
+                return;
+            }
+
+            loanHistory.innerHTML = loanState.recentLoans.map((loan) => {
+                return '<div class="submission-item">'
+                    + '<strong>' + escapeHtml(loan.itemName) + '</strong><br>'
+                    + 'Status: ' + escapeHtml(loan.status) + '<br>'
+                    + 'Requested: ' + escapeHtml(formatDate(loan.requestedAt)) + '<br>'
+                    + 'Fulfilled: ' + escapeHtml(formatDate(loan.fulfilledAt)) + '<br>'
+                    + 'Returned: ' + escapeHtml(formatDate(loan.returnedAt))
+                    + '</div>';
+            }).join('');
+        }
+
+        async function loadLoans() {
+            setLoanStatus('Loading electronics items...');
+
+            try {
+                const response = await fetch('/api/loans/catalog');
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Failed to load loans');
+                }
+
+                loanState = {
+                    maxActiveLoans: data.maxActiveLoans || 2,
+                    activeCount: data.activeCount || 0,
+                    remainingSlots: data.remainingSlots || 0,
+                    items: data.items || [],
+                    recentLoans: data.recentLoans || []
+                };
+
+                renderLoanSummary();
+                renderLoanCatalog();
+                renderLoanHistory();
+                setLoanStatus('Loan catalog ready.', 'ok');
+            } catch (error) {
+                setLoanStatus(error.message || 'Could not load loan catalog.', 'err');
+            }
+        }
+
+        async function requestLoan(itemId) {
+            setLoanStatus('Submitting loan request...');
+
+            try {
+                const response = await fetch('/api/loans/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ itemId })
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Loan request failed');
+                }
+
+                setLoanStatus('Loan request submitted. Please collect from admin when fulfilled.', 'ok');
+                await loadLoans();
+            } catch (error) {
+                setLoanStatus(error.message || 'Could not request loan.', 'err');
+            }
+        }
+
+        loanCatalog.addEventListener('click', (event) => {
+            const button = event.target.closest('button[data-item-id]');
+            if (!button) return;
+            requestLoan(Number(button.getAttribute('data-item-id')));
+        });
+
+        if (params.get('loan')) activateTab('loans');
+        loadLoans();
     </script>
 </body>
 </html>

@@ -387,7 +387,12 @@
 </div>
 
 <script>
-    const foodSessions = <%- JSON.stringify(foodSessions) %>;
+    const foodSessions = [
+        { id: 'day1_lunch', label: 'Day 1 Lunch' },
+        { id: 'day1_snack', label: 'Day 1 Snack' },
+        { id: 'day2_lunch', label: 'Day 2 Lunch' },
+        { id: 'day2_snack', label: 'Day 2 Snack' }
+    ];
 
     const statusEl = document.getElementById('status');
     const searchInput = document.getElementById('searchInput');

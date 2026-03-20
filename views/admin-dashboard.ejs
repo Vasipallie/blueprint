@@ -250,7 +250,7 @@
             <div class="hero-text">
                 <h1>Admin Control Panel</h1>
                 <p class="email-tag"><%= user.email %></p>
-                <p>Manage teams, courses, emails, and submissions for the Blueprint event.</p>
+                <p>Manage teams, emails, submissions, and electronics loans for the Blueprint event.</p>
             </div>
         </div>
 
@@ -258,10 +258,6 @@
             <div class="stat-card">
                 <div class="stat-label">Total Teams</div>
                 <div class="stat-value"><%= teamCount %></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Course Articles</div>
-                <div class="stat-value"><%= courseCount %></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Submissions</div>
@@ -276,12 +272,6 @@
                 <div class="action-title">Teams</div>
                 <p class="action-desc">Create team credentials and email onboarding details.</p>
                 <span class="action-go">▶ OPEN TEAMS</span>
-            </a>
-            <a href="/admin/courses" class="action-card">
-                <span class="action-icon">📚</span>
-                <div class="action-title">Courses</div>
-                <p class="action-desc">Build and publish course articles using rich HTML editing.</p>
-                <span class="action-go">▶ OPEN EDITOR</span>
             </a>
             <a href="/admin/emails" class="action-card">
                 <span class="action-icon">✉️</span>
@@ -300,6 +290,12 @@
                 <div class="action-title">Food and Attendance</div>
                 <p class="action-desc">Search teams or members, mark food sessions, and track attendance with manual sheet or QR.</p>
                 <span class="action-go">▶ OPEN OPS</span>
+            </a>
+            <a href="/admin/loans" class="action-card">
+                <span class="action-icon">🔌</span>
+                <div class="action-title">Electronics Loans</div>
+                <p class="action-desc">Track pending requests, fulfilled pickups, returned items, and inventory stock in one place.</p>
+                <span class="action-go">▶ OPEN LOANS</span>
             </a>
         </div>
 

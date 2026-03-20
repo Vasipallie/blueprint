@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#0d1520">
+    <title>Electronics Loans | Atlas Admin</title>
+    <style>
+        @font-face { font-family: mcten; src: url('/resources/mc10.woff2') format('woff2'); }
+        @font-face { font-family: mc7; src: url('/resources/mc7.woff2') format('woff2'); }
+
+        :root {
+            --bg: #0d1520;
+            --bg-2: #151e2d;
+            --panel: #1b2536;
+            --panel-2: #111827;
+            --ink: #e7eef8;
+            --muted: #b3c0d6;
+            --accent: #ffca58;
+            --ok: #73f5b2;
+            --warn: #ff9a66;
+            --line: #2c3b53;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body {
+            margin: 0;
+            padding: 0;
+            min-height: 100%;
+            background:
+                radial-gradient(1200px 700px at 85% -5%, #35557b55, transparent 70%),
+                radial-gradient(1000px 600px at -15% 20%, #7b4f2a44, transparent 65%),
+                var(--bg);
+            color: var(--ink);
+            font-family: mcten, monospace;
+            cursor: url('/resources/crosshair-32.png') 16 16, crosshair;
+        }
+
+        a, button, input, select { cursor: url('/resources/crosshair-32.png') 16 16, crosshair; }
+
+        .page {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .card {
+            border: 2px solid var(--line);
+            border-radius: 8px;
+            background: linear-gradient(165deg, #223049dd, #121a27f0);
+            box-shadow: inset -2px -4px #0005, inset 2px 2px #fff2;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .title {
+            margin: 0;
+            font-family: mc7, monospace;
+            color: var(--accent);
+            font-size: clamp(1rem, 2.9vw, 1.8rem);
+            letter-spacing: 0.02em;
+        }
+
+        .subtitle {
+            margin: 0.25rem 0 0;
+            color: var(--muted);
+            font-family: mc7, monospace;
+            font-size: 0.72rem;
+        }
+
+        .actions { display: flex; gap: 0.45rem; flex-wrap: wrap; }
+
+        .btn {
+            border: 2px solid #000;
+            background: #4a607f url('/resources/bgbtn.png') center / cover;
+            color: #f4f8ff;
+            text-decoration: none;
+            font-family: mc7, monospace;
+            font-size: 0.72rem;
+            padding: 0.62rem 0.84rem;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #fff3;
+            transition: transform 0.12s ease, filter 0.12s ease;
+        }
+
+        .btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+
+        .status {
+            border: 2px solid var(--line);
+            background: #0d152699;
+            padding: 0.62rem 0.75rem;
+            font-family: mc7, monospace;
+            font-size: 0.68rem;
+            color: var(--muted);
+        }
+
+        .status.ok { color: var(--ok); border-color: #3a6e57; }
+        .status.err { color: #ffb6a3; border-color: #74483d; }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(120px, 1fr));
+            gap: 0.7rem;
+            margin-top: 0.9rem;
+        }
+
+        .summary-box {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.55rem;
+            background: #0f1826;
+        }
+
+        .summary-label {
+            color: var(--muted);
+            font-family: mc7, monospace;
+            font-size: 0.58rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .summary-value {
+            color: var(--accent);
+            font-family: mc7, monospace;
+            font-size: 1.05rem;
+            margin-top: 0.2rem;
+        }
+
+        .section-title {
+            margin: 0 0 0.7rem;
+            color: var(--accent);
+            font-family: mc7, monospace;
+            font-size: 0.86rem;
+        }
+
+        .catalog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 0.8rem;
+        }
+
+        .product-card {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            overflow: hidden;
+            background: linear-gradient(180deg, #1a2435, #0f1726);
+        }
+
+        .product-img {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+            border-bottom: 1px solid var(--line);
+            display: block;
+            background: #0d1522;
+        }
+
+        .product-body { padding: 0.65rem; }
+
+        .product-category {
+            color: #a8daff;
+            font-family: mc7, monospace;
+            font-size: 0.58rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .product-name {
+            margin: 0.28rem 0;
+            color: #f8edc8;
+            font-family: mc7, monospace;
+            font-size: 0.74rem;
+            min-height: 1.8em;
+        }
+
+        .stock-line {
+            color: var(--muted);
+            font-family: mc7, monospace;
+            font-size: 0.61rem;
+            line-height: 1.5;
+            margin-bottom: 0.5rem;
+        }
+
+        .stock-edit {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 0.45rem;
+        }
+
+        .input {
+            width: 100%;
+            border: 2px solid #000;
+            background: #1a2430;
+            color: #fff;
+            padding: 0.5rem 0.55rem;
+            font-family: mc7, monospace;
+            font-size: 0.64rem;
+            box-shadow: inset -2px -4px #0006, inset 2px 2px #fff2;
+        }
+
+        .small-btn {
+            border: 1px solid #355976;
+            background: #17324b;
+            color: #b9e5ff;
+            font-family: mc7, monospace;
+            font-size: 0.6rem;
+            padding: 0.5rem 0.62rem;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--line);
+            background: #0f1724;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 920px;
+        }
+
+        th, td {
+            border-bottom: 1px solid #27384e;
+            padding: 0.56rem;
+            text-align: left;
+            vertical-align: middle;
+            font-family: mc7, monospace;
+            font-size: 0.62rem;
+        }
+
+        th {
+            background: #172437;
+            color: #cfe2ff;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .pill {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 0.2rem 0.5rem;
+            border: 1px solid #3c5776;
+            background: #16293d;
+            color: #b8dcff;
+            text-transform: uppercase;
+            font-size: 0.55rem;
+        }
+
+        .pill.pending { border-color: #7e6641; background: #3a2d18; color: #ffd998; }
+        .pill.fulfilled { border-color: #397a5a; background: #153626; color: #aff2ca; }
+        .pill.returned { border-color: #5d6775; background: #222b36; color: #c6d2e2; }
+
+        .row-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+        .action-btn {
+            border: 1px solid #3b5877;
+            background: #17304d;
+            color: #bfe3ff;
+            font-family: mc7, monospace;
+            font-size: 0.55rem;
+            padding: 0.36rem 0.48rem;
+        }
+
+        .action-btn.good { border-color: #3d7a56; background: #1a3a2a; color: #aef5c8; }
+        .action-btn.subtle { border-color: #5a6472; background: #262d38; color: #d6deea; }
+
+        @media (max-width: 980px) {
+            .summary-grid { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+        }
+
+        @media (max-width: 700px) {
+            .summary-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            html, body, a, button, input, select { cursor: auto; }
+        }
+    </style>
+</head>
+<body data-max-active-loans="<%= Number(maxActiveLoans || 2) %>">
+<div class="page">
+    <section class="card top">
+        <div>
+            <h1 class="title">ELECTRONICS LOAN OPERATIONS</h1>
+            <p class="subtitle">Admin: <%= user.email %></p>
+        </div>
+        <div class="actions">
+            <a class="btn" href="/admin">Back to Admin</a>
+            <a class="btn" href="/logout">Logout</a>
+        </div>
+    </section>
+
+    <section class="card">
+        <div id="status" class="status">Loading inventory and loan records...</div>
+        <div class="summary-grid" id="summaryGrid"></div>
+    </section>
+
+    <section class="card">
+        <h2 class="section-title">Inventory Management</h2>
+        <div class="catalog-grid" id="inventoryGrid"></div>
+    </section>
+
+    <section class="card">
+        <h2 class="section-title">Borrowers and Loan Status</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Requested</th>
+                        <th>Team</th>
+                        <th>Item</th>
+                        <th>Status</th>
+                        <th>Fulfilled</th>
+                        <th>Returned</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="loansBody"></tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script>
+    const statusEl = document.getElementById('status');
+    const summaryGrid = document.getElementById('summaryGrid');
+    const inventoryGrid = document.getElementById('inventoryGrid');
+    const loansBody = document.getElementById('loansBody');
+    const maxActiveLoans = Number(document.body.getAttribute('data-max-active-loans') || 2);
+
+    let state = {
+        inventory: [],
+        loans: []
+    };
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function setStatus(message, type = '') {
+        statusEl.className = 'status';
+        if (type) {
+            statusEl.classList.add(type);
+        }
+        statusEl.textContent = message;
+    }
+
+    function formatDate(value) {
+        if (!value) {
+            return '-';
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return '-';
+        }
+        return date.toLocaleString();
+    }
+
+    function renderSummary() {
+        const pending = state.loans.filter((loan) => loan.status === 'pending').length;
+        const fulfilled = state.loans.filter((loan) => loan.status === 'fulfilled').length;
+        const returned = state.loans.filter((loan) => loan.status === 'returned').length;
+        const inStock = state.inventory.reduce((sum, item) => sum + Math.max(0, Number(item.available || 0)), 0);
+
+        summaryGrid.innerHTML = [
+            { label: 'Pending Requests', value: pending },
+            { label: 'Currently Fulfilled', value: fulfilled },
+            { label: 'Returned', value: returned },
+            { label: 'Units Available', value: inStock }
+        ].map((item) => {
+            return '<div class="summary-box">'
+                + '<div class="summary-label">' + escapeHtml(item.label) + '</div>'
+                + '<div class="summary-value">' + escapeHtml(item.value) + '</div>'
+                + '</div>';
+        }).join('');
+    }
+
+    function renderInventory() {
+        if (!state.inventory.length) {
+            inventoryGrid.innerHTML = '<div class="status">No inventory items found.</div>';
+            return;
+        }
+
+        inventoryGrid.innerHTML = state.inventory.map((item) => {
+            return '<article class="product-card">'
+                + '<img class="product-img" src="' + escapeHtml(item.imageUrl || '') + '" alt="' + escapeHtml(item.name) + '" loading="lazy">'
+                + '<div class="product-body">'
+                + '<div class="product-category">' + escapeHtml(item.category) + '</div>'
+                + '<h3 class="product-name">' + escapeHtml(item.name) + '</h3>'
+                + '<div class="stock-line">Total: ' + escapeHtml(item.totalStock) + ' | Reserved: ' + escapeHtml(item.reserved) + ' | Available: ' + escapeHtml(item.available) + '</div>'
+                + '<div class="stock-edit">'
+                + '<input id="stockInput_' + escapeHtml(item.id) + '" class="input" type="number" min="0" value="' + escapeHtml(item.totalStock) + '">'
+                + '<button class="small-btn" type="button" data-stock-item="' + escapeHtml(item.id) + '">Save</button>'
+                + '</div>'
+                + '</div>'
+                + '</article>';
+        }).join('');
+    }
+
+    function renderLoans() {
+        if (!state.loans.length) {
+            loansBody.innerHTML = '<tr><td colspan="7">No loan requests yet.</td></tr>';
+            return;
+        }
+
+        loansBody.innerHTML = state.loans.map((loan) => {
+            const canSetPending = loan.status !== 'pending';
+            const canSetFulfilled = loan.status !== 'fulfilled' && loan.status !== 'returned';
+            const canSetReturned = loan.status !== 'returned';
+
+            return '<tr>'
+                + '<td>' + escapeHtml(formatDate(loan.requestedAt)) + '</td>'
+                + '<td>' + escapeHtml(loan.teamName) + '<br><span style="color:#9fb0c6">' + escapeHtml(loan.teamEmail || '-') + '</span></td>'
+                + '<td>' + escapeHtml(loan.itemName) + '</td>'
+                + '<td><span class="pill ' + escapeHtml(loan.status) + '">' + escapeHtml(loan.status) + '</span></td>'
+                + '<td>' + escapeHtml(formatDate(loan.fulfilledAt)) + '</td>'
+                + '<td>' + escapeHtml(formatDate(loan.returnedAt)) + '</td>'
+                + '<td><div class="row-actions">'
+                + '<button class="action-btn subtle" data-loan-id="' + escapeHtml(loan.id) + '" data-next-status="pending" ' + (canSetPending ? '' : 'disabled') + '>Mark Pending</button>'
+                + '<button class="action-btn good" data-loan-id="' + escapeHtml(loan.id) + '" data-next-status="fulfilled" ' + (canSetFulfilled ? '' : 'disabled') + '>Mark Fulfilled</button>'
+                + '<button class="action-btn" data-loan-id="' + escapeHtml(loan.id) + '" data-next-status="returned" ' + (canSetReturned ? '' : 'disabled') + '>Mark Returned</button>'
+                + '</div></td>'
+                + '</tr>';
+        }).join('');
+    }
+
+    async function fetchDashboard() {
+        setStatus('Loading loan dashboard...');
+
+        try {
+            const response = await fetch('/api/admin/loans/dashboard');
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Failed to load dashboard');
+            }
+
+            state.inventory = data.inventory || [];
+            state.loans = data.loans || [];
+
+            renderSummary();
+            renderInventory();
+            renderLoans();
+            setStatus('Loan dashboard ready. Max ' + maxActiveLoans + ' active items per team.', 'ok');
+        } catch (error) {
+            setStatus(error.message || 'Could not load dashboard.', 'err');
+            summaryGrid.innerHTML = '';
+            inventoryGrid.innerHTML = '';
+            loansBody.innerHTML = '';
+        }
+    }
+
+    async function updateStock(itemId) {
+        const input = document.getElementById('stockInput_' + itemId);
+        const totalStock = Number(input?.value);
+
+        if (Number.isNaN(totalStock) || totalStock < 0) {
+            setStatus('Enter a valid stock number (0 or more).', 'err');
+            return;
+        }
+
+        setStatus('Saving stock update...');
+
+        try {
+            const response = await fetch('/api/admin/inventory/' + encodeURIComponent(itemId) + '/stock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ totalStock })
+            });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Stock update failed');
+            }
+
+            setStatus('Inventory stock updated.', 'ok');
+            await fetchDashboard();
+        } catch (error) {
+            setStatus(error.message || 'Could not update stock.', 'err');
+        }
+    }
+
+    async function updateLoanStatus(loanId, status) {
+        setStatus('Updating loan status...');
+
+        try {
+            const response = await fetch('/api/admin/loans/' + encodeURIComponent(loanId) + '/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status })
+            });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Loan status update failed');
+            }
+
+            setStatus('Loan status updated to ' + status + '.', 'ok');
+            await fetchDashboard();
+        } catch (error) {
+            setStatus(error.message || 'Could not update loan status.', 'err');
+        }
+    }
+
+    inventoryGrid.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-stock-item]');
+        if (!button) {
+            return;
+        }
+
+        updateStock(button.getAttribute('data-stock-item'));
+    });
+
+    loansBody.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-loan-id]');
+        if (!button) {
+            return;
+        }
+
+        updateLoanStatus(button.getAttribute('data-loan-id'), button.getAttribute('data-next-status'));
+    });
+
+    fetchDashboard();
+</script>
+</body>
+</html>
