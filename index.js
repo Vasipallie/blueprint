@@ -37,6 +37,8 @@ const ATTENDANCE_SESSIONS = [
 ];
 
 const MAX_ACTIVE_LOANS_PER_TEAM = 2;
+const LOANS_OPEN_AT_ISO = '2026-03-30T01:00:00.000Z'; // March 30, 2026 9:00 AM SGT
+const LOANS_OPEN_MESSAGE = 'Loan requests are closed until March 30, 2026 9:00 AM SGT.';
 
 const DEFAULT_ELECTRONICS_ITEMS = [
     { slug: 'lcd', name: 'LCD', category: 'Output', image_url: 'https://placehold.co/640x480/101820/f5eecf?text=LCD', total_stock: 8 },
@@ -57,6 +59,21 @@ const DEFAULT_ELECTRONICS_ITEMS = [
     { slug: 'humidity-sensor', name: 'Humidity sensor', category: 'Input', image_url: 'https://placehold.co/640x480/112a24/cbffe8?text=Humidity+sensor', total_stock: 10 },
     { slug: 'nfc-cards', name: 'NFC Cards', category: 'Input', image_url: 'https://placehold.co/640x480/252012/fff1c8?text=NFC+Cards', total_stock: 20 }
 ];
+
+const LOAN_ITEM_IMAGE_BY_SLUG = {
+    arduino: '/resources/loans/arduino.jpg',
+    'button-matrix': '/resources/loans/buttonmatrix.jpeg',
+    'humidity-sensor': '/resources/loans/dht.png',
+    joystick: '/resources/loans/joystick.jpg',
+    lcd: '/resources/loans/lcd.jpg',
+    'led-matrix': '/resources/loans/ledmatrix.jpeg',
+    rfid: '/resources/loans/rfid.png'
+};
+
+function resolveLoanItemImageUrl(item) {
+    const slug = String(item?.slug || '').trim().toLowerCase();
+    return LOAN_ITEM_IMAGE_BY_SLUG[slug] || item?.image_url || '';
+}
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -572,6 +589,17 @@ function normalizeLoanRow(row) {
         fulfilledAt: row.fulfilled_at,
         returnedAt: row.returned_at,
         notes: String(row.notes || '')
+    };
+}
+
+function getLoanAvailability() {
+    const opensAt = new Date(LOANS_OPEN_AT_ISO);
+    const isOpen = Date.now() >= opensAt.getTime();
+
+    return {
+        isOpen,
+        opensAt: opensAt.toISOString(),
+        message: isOpen ? '' : LOANS_OPEN_MESSAGE
     };
 }
 
@@ -1177,6 +1205,7 @@ async function fetchTeamMapByIds(teamIds) {
 app.get('/api/loans/catalog', requireLogin, async (req, res) => {
     try {
         await ensureElectronicsInventorySeeded();
+        const loanAvailability = getLoanAvailability();
 
         const team = await resolveTeamSummaryForUser(req.session.user);
 
@@ -1226,7 +1255,7 @@ app.get('/api/loans/catalog', requireLogin, async (req, res) => {
                 slug: item.slug,
                 name: item.name,
                 category: item.category,
-                imageUrl: item.image_url,
+                imageUrl: resolveLoanItemImageUrl(item),
                 notes: item.notes,
                 totalStock,
                 reserved,
@@ -1242,6 +1271,9 @@ app.get('/api/loans/catalog', requireLogin, async (req, res) => {
             success: true,
             team,
             maxActiveLoans: MAX_ACTIVE_LOANS_PER_TEAM,
+            loansOpen: loanAvailability.isOpen,
+            loansOpenAt: loanAvailability.opensAt,
+            loansMessage: loanAvailability.message,
             activeCount,
             remainingSlots,
             activeLoans,
@@ -1256,6 +1288,11 @@ app.get('/api/loans/catalog', requireLogin, async (req, res) => {
 
 app.post('/api/loans/request', requireLogin, async (req, res) => {
     const itemId = Number(req.body?.itemId);
+    const loanAvailability = getLoanAvailability();
+
+    if (!loanAvailability.isOpen) {
+        return res.status(403).json({ success: false, message: loanAvailability.message, opensAt: loanAvailability.opensAt });
+    }
 
     if (!itemId || Number.isNaN(itemId)) {
         return res.status(400).json({ success: false, message: 'Choose a valid item.' });
@@ -1379,7 +1416,7 @@ app.get('/api/admin/loans/dashboard', requireAdmin, async (req, res) => {
                 slug: item.slug,
                 name: item.name,
                 category: item.category,
-                imageUrl: item.image_url,
+                imageUrl: resolveLoanItemImageUrl(item),
                 notes: item.notes,
                 totalStock,
                 reserved,
