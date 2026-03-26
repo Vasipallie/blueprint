@@ -378,6 +378,66 @@ function normalizeString(value) {
     return String(value || '').trim().toLowerCase();
 }
 
+async function fetchSensorKitFulfillmentMap() {
+    try {
+        const { data, error } = await supabase
+            .from(adminSettingsTable)
+            .select('value_json')
+            .eq('key', 'sensor_kit_fulfillment')
+            .maybeSingle();
+
+        if (error) {
+            if (error.code !== '42P01') {
+                console.error('Sensor kit settings fetch error:', error.message);
+            }
+            return {};
+        }
+
+        const map = data?.value_json?.teams;
+        if (!map || typeof map !== 'object') {
+            return {};
+        }
+
+        return map;
+    } catch (error) {
+        console.error('Sensor kit settings fetch failed:', error.message);
+        return {};
+    }
+}
+
+async function markSensorKitFulfilled(teamSummary, fulfilledBy) {
+    const existingMap = await fetchSensorKitFulfillmentMap();
+    const nowIso = new Date().toISOString();
+
+    const updatedMap = {
+        ...existingMap,
+        [teamSummary.teamId]: {
+            fulfilled: true,
+            fulfilledAt: nowIso,
+            fulfilledBy: fulfilledBy || 'admin',
+            teamName: teamSummary.teamName
+        }
+    };
+
+    const payload = {
+        key: 'sensor_kit_fulfillment',
+        value_json: {
+            teams: updatedMap
+        },
+        updated_at: nowIso
+    };
+
+    const { error } = await supabase
+        .from(adminSettingsTable)
+        .upsert(payload, { onConflict: 'key' });
+
+    if (error) {
+        throw error;
+    }
+
+    return updatedMap[teamSummary.teamId];
+}
+
 function pickFirstValue(row, keys) {
     for (const key of keys) {
         const value = row?.[key];
@@ -1600,15 +1660,22 @@ app.get('/api/admin/operations/search', requireAdmin, async (req, res) => {
         const allMemberIds = (membersData || []).map((row) => String(row.id));
         const { map: statusMap, tableMissing } = await fetchMemberOperationsMap(allMemberIds);
 
+        const sensorKitMap = await fetchSensorKitFulfillmentMap();
+
         const teams = teamSummaries
             .map((team) => {
                 const members = (membersByTeamId.get(team.teamId) || [])
                     .map((memberRow) => buildMemberSummary(memberRow, team))
                     .map((member) => buildMemberWithStatuses(member, statusMap.get(member.memberId)));
 
+                const sensorKitStatus = sensorKitMap[team.teamId] || null;
+
                 return {
                     ...team,
-                    members
+                    members,
+                    sensorKitFulfilled: Boolean(sensorKitStatus?.fulfilled),
+                    sensorKitFulfilledAt: sensorKitStatus?.fulfilledAt || null,
+                    sensorKitFulfilledBy: sensorKitStatus?.fulfilledBy || null
                 };
             })
             .filter((team) => teamMatchesQuery(team, team.members, q))
@@ -1773,7 +1840,35 @@ app.get('/attendance/scan/:token', async (req, res) => {
         return res.status(500).send('Failed to mark attendance from QR scan.');
     }
 });
+app.post('/api/admin/operations/sensor-kit', requireAdmin, async (req, res) => {
+    const teamId = String(req.body?.teamId || '').trim();
 
+    if (!teamId) {
+        return res.status(400).json({ success: false, message: 'Team id is required.' });
+    }
+
+    try {
+        const teamMap = await fetchTeamMapByIds([teamId]);
+        const team = teamMap.get(teamId);
+
+        if (!team) {
+            return res.status(404).json({ success: false, message: 'Team not found.' });
+        }
+
+        const status = await markSensorKitFulfilled(team, req.session.user?.email || 'admin');
+
+        return res.json({
+            success: true,
+            teamId,
+            sensorKitFulfilled: true,
+            sensorKitFulfilledAt: status?.fulfilledAt || null,
+            sensorKitFulfilledBy: status?.fulfilledBy || null
+        });
+    } catch (error) {
+        console.error('Sensor kit mark failed:', error.message);
+        return res.status(500).json({ success: false, message: 'Failed to mark sensor kit fulfillment.' });
+    }
+});
 
 app.listen(3000, () => {
     console.log('Server started on http://localhost:3000');

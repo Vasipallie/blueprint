@@ -31,14 +31,6 @@
         ::-webkit-scrollbar-thumb { background:#333; border-radius:4px; }
         ::-webkit-scrollbar-thumb:hover { background:#555; }
 
-        .bg-video {
-            position:fixed; top:50%; left:50%;
-            transform:translate(-50%,-50%);
-            min-width:100%; min-height:100%;
-            width:auto; height:auto;
-            z-index:-1; object-fit:cover; opacity:0.2;
-        }
-
         .navbar {
             position:fixed; top:0; left:0; right:0; height:56px;
             background:linear-gradient(180deg,#1a1a1ae8,#0a0a0aee);
@@ -231,10 +223,6 @@
     <link rel="icon" type="image/png" href="/resources/logo.png">
 </head>
 <body>
-    <video class="bg-video" autoplay muted loop playsinline>
-        <source src="https://7oaoepmc5nhfkhkk.public.blob.vercel-storage.com/bcgk.mp4" type="video/mp4">
-    </video>
-
     <nav class="navbar">
         <div class="nav-brand">
             <img src="/resources/logo.png" alt="Blueprint" class="nav-logo">

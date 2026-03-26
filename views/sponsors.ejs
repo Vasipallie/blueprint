@@ -40,19 +40,6 @@
             background-position: center center;
         }
         
-        .bg-video {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            min-width: 100%;
-            min-height: 100%;
-            width: auto;
-            height: auto;
-            z-index: -1;
-            object-fit: cover;
-        }
-
         .overlay {
             position: fixed;
             top: 0;
@@ -511,7 +498,6 @@
         }
 
         @media print {
-            .bg-video,
             .overlay {
                 display: none;
             }
@@ -524,9 +510,6 @@
     <link rel="icon" type="image/png" href="logo.png">
 </head>
 <body>
-    <video class="bg-video" autoplay loop muted playsinline>
-        <source src="https://github.com/Vasipallie/blueprint/releases/download/video/bcgk.mp4" type="video/mp4">
-    </video>
     <div class="overlay"></div>
 
     <div class="page-wrapper">
