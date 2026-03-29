@@ -86,14 +86,24 @@ values
     ('arduino', 'Arduino', 'Output', 'https://placehold.co/640x480/1f2a0f/f3ff9f?text=Arduino', 10, 'Loan item. Must be returned.'),
     ('servo', 'Servo', 'Output', 'https://placehold.co/640x480/271433/f7d6ff?text=Servo', 10, 'Loan item. Must be returned.'),
     ('rgb-light', 'RGB Light', 'Output', 'https://placehold.co/640x480/2a0f17/ffd1de?text=RGB+Light', 10, 'Loan item. Must be returned.'),
-    ('motor-driver', 'Motor Driver', 'Output', 'https://placehold.co/640x480/202020/fff0c2?text=Motor+Driver', 8, 'Loan item. Must be returned.'),
     ('stepper-motor', 'Stepper motor', 'Output', 'https://placehold.co/640x480/0f2222/c9fff5?text=Stepper+motor', 8, 'Loan item. Must be returned.'),
     ('7-segment-display', '7 segment display', 'Output', 'https://placehold.co/640x480/1a0f25/e6c9ff?text=7+segment+display', 12, 'Loan item. Must be returned.'),
     ('joystick', 'Joystick', 'Input', 'https://placehold.co/640x480/151515/ffe8a3?text=Joystick', 10, 'Loan item. Must be returned.'),
     ('button-matrix', 'button matrix', 'Input', 'https://placehold.co/640x480/17253a/c2e6ff?text=button+matrix', 10, 'Loan item. Must be returned.'),
     ('ir-sensor', 'ir sensor', 'Input', 'https://placehold.co/640x480/2a140f/ffcfbd?text=ir+sensor', 10, 'Loan item. Must be returned.'),
     ('rfid', 'RFID', 'Input', 'https://placehold.co/640x480/0e2330/c3f3ff?text=RFID', 10, 'Loan item. Must be returned.'),
-    ('microphone', 'Microphone', 'Input', 'https://placehold.co/640x480/1e1222/f5d0ff?text=Microphone', 10, 'Loan item. Must be returned.'),
-    ('humidity-sensor', 'Humidity sensor', 'Input', 'https://placehold.co/640x480/112a24/cbffe8?text=Humidity+sensor', 10, 'Loan item. Must be returned.'),
-    ('nfc-cards', 'NFC Cards', 'Input', 'https://placehold.co/640x480/252012/fff1c8?text=NFC+Cards', 20, 'Loan item. Must be returned.')
+    ('microphone', 'Sound sensor', 'Input', 'https://placehold.co/640x480/1e1222/f5d0ff?text=Sound+sensor', 10, 'Loan item. Must be returned.'),
+    ('humidity-sensor', 'Humidity sensor', 'Input', 'https://placehold.co/640x480/112a24/cbffe8?text=Humidity+sensor', 10, 'Loan item. Must be returned.')
 on conflict (slug) do nothing;
+
+-- One-time inventory cleanup migration for existing databases
+-- Remove retired items and rename microphone to sound sensor.
+delete from public.electronics_inventory
+where slug in ('motor-driver', 'nfc-cards');
+
+update public.electronics_inventory
+set
+    name = 'Sound sensor',
+    image_url = 'https://placehold.co/640x480/1e1222/f5d0ff?text=Sound+sensor',
+    updated_at = now()
+where slug = 'microphone';

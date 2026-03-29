@@ -39,6 +39,11 @@ const ATTENDANCE_SESSIONS = [
 const MAX_ACTIVE_LOANS_PER_TEAM = 2;
 const LOANS_OPEN_AT_ISO = '2026-03-30T01:00:00.000Z'; // March 30, 2026 9:00 AM SGT
 const LOANS_OPEN_MESSAGE = 'Loan requests are closed until March 30, 2026 9:00 AM SGT.';
+const RETIRED_ELECTRONICS_SLUGS = new Set(['motor-driver', 'nfc-cards']);
+const SOUND_SENSOR_IMAGE_URL = 'https://placehold.co/640x480/1e1222/f5d0ff?text=Sound+sensor';
+
+let electronicsInventorySyncComplete = false;
+let electronicsInventorySyncPromise = null;
 
 const DEFAULT_ELECTRONICS_ITEMS = [
     { slug: 'lcd', name: 'LCD', category: 'Output', image_url: 'https://placehold.co/640x480/101820/f5eecf?text=LCD', total_stock: 8 },
@@ -48,16 +53,15 @@ const DEFAULT_ELECTRONICS_ITEMS = [
     { slug: 'arduino', name: 'Arduino', category: 'Output', image_url: 'https://placehold.co/640x480/1f2a0f/f3ff9f?text=Arduino', total_stock: 10 },
     { slug: 'servo', name: 'Servo', category: 'Output', image_url: 'https://placehold.co/640x480/271433/f7d6ff?text=Servo', total_stock: 10 },
     { slug: 'rgb-light', name: 'RGB Light', category: 'Output', image_url: 'https://placehold.co/640x480/2a0f17/ffd1de?text=RGB+Light', total_stock: 10 },
-    { slug: 'motor-driver', name: 'Motor Driver', category: 'Output', image_url: 'https://placehold.co/640x480/202020/fff0c2?text=Motor+Driver', total_stock: 8 },
     { slug: 'stepper-motor', name: 'Stepper motor', category: 'Output', image_url: 'https://placehold.co/640x480/0f2222/c9fff5?text=Stepper+motor', total_stock: 8 },
     { slug: '7-segment-display', name: '7 segment display', category: 'Output', image_url: 'https://placehold.co/640x480/1a0f25/e6c9ff?text=7+segment+display', total_stock: 12 },
     { slug: 'joystick', name: 'Joystick', category: 'Input', image_url: 'https://placehold.co/640x480/151515/ffe8a3?text=Joystick', total_stock: 10 },
     { slug: 'button-matrix', name: 'button matrix', category: 'Input', image_url: 'https://placehold.co/640x480/17253a/c2e6ff?text=button+matrix', total_stock: 10 },
     { slug: 'ir-sensor', name: 'ir sensor', category: 'Input', image_url: 'https://placehold.co/640x480/2a140f/ffcfbd?text=ir+sensor', total_stock: 10 },
     { slug: 'rfid', name: 'RFID', category: 'Input', image_url: 'https://placehold.co/640x480/0e2330/c3f3ff?text=RFID', total_stock: 10 },
-    { slug: 'microphone', name: 'Microphone', category: 'Input', image_url: 'https://placehold.co/640x480/1e1222/f5d0ff?text=Microphone', total_stock: 10 },
+    { slug: 'microphone', name: 'Sound sensor', category: 'Input', image_url: 'https://placehold.co/640x480/1e1222/f5d0ff?text=Sound+sensor', total_stock: 10 },
     { slug: 'humidity-sensor', name: 'Humidity sensor', category: 'Input', image_url: 'https://placehold.co/640x480/112a24/cbffe8?text=Humidity+sensor', total_stock: 10 },
-    { slug: 'nfc-cards', name: 'NFC Cards', category: 'Input', image_url: 'https://placehold.co/640x480/252012/fff1c8?text=NFC+Cards', total_stock: 20 }
+    
 ];
 
 const LOAN_ITEM_IMAGE_BY_SLUG = {
@@ -73,6 +77,19 @@ const LOAN_ITEM_IMAGE_BY_SLUG = {
 function resolveLoanItemImageUrl(item) {
     const slug = String(item?.slug || '').trim().toLowerCase();
     return LOAN_ITEM_IMAGE_BY_SLUG[slug] || item?.image_url || '';
+}
+
+function isRetiredElectronicsItem(item) {
+    const slug = String(item?.slug || '').trim().toLowerCase();
+    return RETIRED_ELECTRONICS_SLUGS.has(slug);
+}
+
+function resolveLoanItemDisplayName(item) {
+    const slug = String(item?.slug || '').trim().toLowerCase();
+    if (slug === 'microphone') {
+        return 'Sound sensor';
+    }
+    return String(item?.name || '');
 }
 
 
@@ -570,30 +587,60 @@ function verifyAttendanceToken(token) {
 }
 
 async function ensureElectronicsInventorySeeded() {
-    const { data, error } = await supabase
-        .from(electronicsInventoryTable)
-        .select('id')
-        .limit(1);
-
-    if (error) {
-        throw error;
-    }
-
-    if ((data || []).length > 0) {
+    if (electronicsInventorySyncComplete) {
         return;
     }
 
-    const payload = DEFAULT_ELECTRONICS_ITEMS.map((item) => ({
-        ...item,
-        notes: 'Loan item. Must be returned.'
-    }));
+    if (electronicsInventorySyncPromise) {
+        await electronicsInventorySyncPromise;
+        return;
+    }
 
-    const { error: seedError } = await supabase
-        .from(electronicsInventoryTable)
-        .insert(payload);
+    electronicsInventorySyncPromise = (async () => {
+        const payload = DEFAULT_ELECTRONICS_ITEMS.map((item) => ({
+            ...item,
+            notes: 'Loan item. Must be returned.'
+        }));
 
-    if (seedError) {
-        throw seedError;
+        const { error: upsertError } = await supabase
+            .from(electronicsInventoryTable)
+            .upsert(payload, { onConflict: 'slug' });
+
+        if (upsertError) {
+            throw upsertError;
+        }
+
+        const retiredSlugs = Array.from(RETIRED_ELECTRONICS_SLUGS);
+        if (retiredSlugs.length > 0) {
+            const { error: deleteRetiredError } = await supabase
+                .from(electronicsInventoryTable)
+                .delete()
+                .in('slug', retiredSlugs);
+
+            if (deleteRetiredError) {
+                throw deleteRetiredError;
+            }
+        }
+
+        const { error: renameError } = await supabase
+            .from(electronicsInventoryTable)
+            .update({
+                name: 'Sound sensor',
+                image_url: SOUND_SENSOR_IMAGE_URL
+            })
+            .eq('slug', 'microphone');
+
+        if (renameError) {
+            throw renameError;
+        }
+
+        electronicsInventorySyncComplete = true;
+    })();
+
+    try {
+        await electronicsInventorySyncPromise;
+    } finally {
+        electronicsInventorySyncPromise = null;
     }
 }
 
@@ -1304,7 +1351,9 @@ app.get('/api/loans/catalog', requireLogin, async (req, res) => {
         const activeLoanIds = new Set((activeLoanData || []).map((row) => Number(row.item_id)));
         const activeLoans = (activeLoanData || []).map(normalizeLoanRow);
 
-        const items = (inventoryData || []).map((item) => {
+        const items = (inventoryData || [])
+            .filter((item) => !isRetiredElectronicsItem(item))
+            .map((item) => {
             const itemId = Number(item.id);
             const totalStock = Number(item.total_stock || 0);
             const reserved = reservedMap.get(itemId) || 0;
@@ -1313,7 +1362,7 @@ app.get('/api/loans/catalog', requireLogin, async (req, res) => {
             return {
                 id: itemId,
                 slug: item.slug,
-                name: item.name,
+                name: resolveLoanItemDisplayName(item),
                 category: item.category,
                 imageUrl: resolveLoanItemImageUrl(item),
                 notes: item.notes,
@@ -1322,7 +1371,7 @@ app.get('/api/loans/catalog', requireLogin, async (req, res) => {
                 available,
                 alreadyRequestedByTeam: activeLoanIds.has(itemId)
             };
-        });
+            });
 
         const activeCount = activeLoans.length;
         const remainingSlots = Math.max(0, MAX_ACTIVE_LOANS_PER_TEAM - activeCount);
@@ -1379,6 +1428,10 @@ app.post('/api/loans/request', requireLogin, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Item not found.' });
         }
 
+        if (isRetiredElectronicsItem(item)) {
+            return res.status(400).json({ success: false, message: 'This item is no longer available for loan.' });
+        }
+
         const activeLoans = teamActiveLoans || [];
         if (activeLoans.length >= MAX_ACTIVE_LOANS_PER_TEAM) {
             return res.status(400).json({ success: false, message: `Loan limit reached. Max ${MAX_ACTIVE_LOANS_PER_TEAM} active items per team.` });
@@ -1399,7 +1452,7 @@ app.post('/api/loans/request', requireLogin, async (req, res) => {
             team_name: team.teamName,
             team_email: team.teamEmail,
             item_id: itemId,
-            item_name: item.name,
+            item_name: resolveLoanItemDisplayName(item),
             status: 'pending',
             requested_at: new Date().toISOString(),
             notes: 'Loan requested by team. Item must be returned.'
@@ -1468,13 +1521,15 @@ app.get('/api/admin/loans/dashboard', requireAdmin, async (req, res) => {
         }
 
         const reservedMap = buildReservedMap(openLoanData || []);
-        const inventory = (inventoryData || []).map((item) => {
+        const inventory = (inventoryData || [])
+            .filter((item) => !isRetiredElectronicsItem(item))
+            .map((item) => {
             const totalStock = Number(item.total_stock || 0);
             const reserved = reservedMap.get(Number(item.id)) || 0;
             return {
                 id: Number(item.id),
                 slug: item.slug,
-                name: item.name,
+                name: resolveLoanItemDisplayName(item),
                 category: item.category,
                 imageUrl: resolveLoanItemImageUrl(item),
                 notes: item.notes,
@@ -1482,7 +1537,7 @@ app.get('/api/admin/loans/dashboard', requireAdmin, async (req, res) => {
                 reserved,
                 available: Math.max(0, totalStock - reserved)
             };
-        });
+            });
 
         return res.json({
             success: true,
